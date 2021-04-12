@@ -4,6 +4,8 @@ sidebar: auto
 
 # Govern
 
+![Aragon Govern header](/govern.png)
+
 Welcome to Govern's documentation.
 
 Govern is software for creating and governing organizations such as DeFi projects, open source projects, gaming guilds, cooperatives, nonprofits, clubs, companies, and any other type of organization you can imagine. It's Aragon's implementation of ERC-3000, the standard for binding off-chain voting.
@@ -21,7 +23,7 @@ A Govern DAO, in its most normal and basic form has two key pieces:
 * An Action Queue
 * An Executor
 
-Govern's Action Queue is what most users will interact with directly—it holds the DAOs configuration parameters, and its where actors can schedule, execute, veto and challenge actions. It's also flexible, meaning that actions can be introduced to tweak its own parameters on the fly.
+Govern's Action Queue is what most users will interact with directly—it holds the DAOs configuration parameters, and its where actors can schedule, execute, challenge, and veto actions. It's also flexible, meaning that actions can be introduced to tweak its own parameters on the fly.
 
 Through the Executor, Govern DAOs can also hold funds and interact with any arbitrary protocol. This makes it equivalent to **aragonOS's Agent** and **Moloch's Minion.** This allows for complex user flows such as a community deciding through a Vocdoni vote to use pooled funds in the Executor to gain interest through lending protocols like Compound or AAVE and also fund a Balancer liquidity pool, all in one transaction.
 
@@ -405,7 +407,7 @@ type ContainerEventVeto implements ContainerEvent @entity {
 
 **Stateless contracts**
 
-Aragon Govern's contracts hold very little state; this is to keep gas costs as low as possible and to keep the architecture lean. Akin to [Stateless Ethereum](https://blog.ethereum.org/2020/01/28/eth1x-files-the-stateless-ethereum-tech-tree/), to witness all state transitions and ensure all data is forever available for querying and retrieval in an easy manner, we rely on our subgraph, which stores all actions and executions regarding Govern DAOs. Please refer to the [subgraph docs](https://github.com/aragon/govern/tree/master/packages/govern-subgraph) to have more insight on which events are we tracking, and how.
+Aragon Govern's contracts hold very little state; this is to keep gas costs as low as possible and to keep the architecture lean. Akin to [Stateless Ethereum](https://blog.ethereum.org/2020/01/28/eth1x-files-the-stateless-ethereum-tech-tree/), to witness all state transitions and ensure all data is forever available for querying and retrieval in an easy manner, we rely on our subgraph, which stores all actions and executions regarding Govern DAOs. Please refer to the [subgraph docs](#subgraph) to have more insight on which events are we tracking, and how.
 
 ### GovernRegistry
 
