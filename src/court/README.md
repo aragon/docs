@@ -12,23 +12,23 @@ The core of the document is organized around the external entry points to the sy
 
 ## Mechanism
 
-The Aragon Protocol is a dispute resolution protocol designed to handle subjective disputes which cannot be arbitrated by smart contracts. At a high level, this is achieved by drafting a random set of guardians for each dispute over which a ruling is voted over. Aragon Protocol is one of the core components of the [Aragon Network](https://aragon.org/network/).
+The Aragon Court is a dispute resolution protocol designed to handle subjective disputes which cannot be arbitrated by smart contracts. At a high level, this is achieved by drafting a random set of guardians for each dispute over which a ruling is voted over. Aragon Court is one of the core components of the [Aragon Network](https://aragon.org/network/).
 
-Ethereum accounts (including contracts) will sign up to be guardians by staking ANT tokens into the Protocol. The more tokens a guardian has staked and activated, the higher their chance of being drafted.
+Ethereum accounts (including contracts) will sign up to be guardians by staking ANT tokens into the Court. The more tokens a guardian has staked and activated, the higher their chance of being drafted.
 
 Based on the concept of a [Schelling point](https://en.wikipedia.org/wiki/Focal_point_(game_theory)), guardians are asked to vote on the ruling they think their fellow guardians are most likely to vote on. Every time a guardian is drafted for a dispute, a portion of their active tokens are locked until the dispute is finalized. To incentivize consensus, guardians that don’t vote in favor of the consensus ruling have their locked tokens slashed. Guardians that vote in favor of the consensus ruling are rewarded with ruling fees and a portion of the tokens slashed from the minority-voting guardians.
 
-Once a ruling has been decided for a dispute, there is a time period where anyone is allowed to appeal said ruling by putting some collateral at stake to initiate a new dispute round. If this occurs, a new set of guardians will be drafted and a new ruling will be voted on. Rulings can be appealed multiple times until the final round is reached. To mitigate 51% attacks, all active guardian accounts can opt into voting during the final round. For future versions of the Protocol, we are considering using [futarchy decision markets](https://blog.aragon.one/futarchy-protocols/) for the final dispute round instead.
+Once a ruling has been decided for a dispute, there is a time period where anyone is allowed to appeal said ruling by putting some collateral at stake to initiate a new dispute round. If this occurs, a new set of guardians will be drafted and a new ruling will be voted on. Rulings can be appealed multiple times until the final round is reached. To mitigate 51% attacks, all active guardian accounts can opt into voting during the final round. For future versions of the Court, we are considering using [futarchy decision markets](https://blog.aragon.one/futarchy-protocols/) for the final dispute round instead.
 
-The Protocol uses an inherent time unit, called a "term," to determine how long certain actions or phases last. The length of a "term" is guaranteed to be constant, although each phase in a dispute can have its length configured by setting how many "terms" the phase will last for. Terms are advanced via "heartbeat" transactions and most functionality will only execute if the Protocol has been updated to its latest term.
+The Court uses an inherent time unit, called a "term," to determine how long certain actions or phases last. The length of a "term" is guaranteed to be constant, although each phase in a dispute can have its length configured by setting how many "terms" the phase will last for. Terms are advanced via "heartbeat" transactions and most functionality will only execute if the Court has been updated to its latest term.
 
-Even though the Aragon Protocol could theoretically resolve any type of binary dispute, we intend for its first version to be primarily used for arbitrating [Proposal Agreements](https://blog.aragon.one/proposal-agreements-and-the-aragon-protocol/). These agreements require entities to first agree upon a set of rules and processes for creating proposals in an organization, each forcing proposal creators to stake collateral that may be forfeit if the proposal is deemed invalid by the Protocol. However, how disputes arrive at the Aragon Protocol is outside of the scope of this protocol. The Protocol relies on a small external interface to link corresponding disputes and execute them once a ruling has been decided.
+Even though the Aragon Court could theoretically resolve any type of binary dispute, we intend for its first version to be primarily used for arbitrating [Proposal Agreements](https://blog.aragon.one/proposal-agreements-and-the-aragon-protocol/). These agreements require entities to first agree upon a set of rules and processes for creating proposals in an organization, each forcing proposal creators to stake collateral that may be forfeit if the proposal is deemed invalid by the Court. However, how disputes arrive at the Aragon Court is outside of the scope of this protocol. The Court relies on a small external interface to link corresponding disputes and execute them once a ruling has been decided.
 
 ### High-level flow
 
-- Guardians stake ANT to the Protocol contract and schedule their activation and deactivation for the time period in which they can be drafted to rule on disputes.
-- Protocol fees and configuration parameters are controlled by a governor (eventually the Aragon Network), but can only be modified for future terms to ensure that parameters can’t change for ongoing disputes.
-- The creator of a dispute must pay fees to cover the maintenance gas costs of the Protocol and the guardians that will adjudicate their dispute. The governor of the Protocol receives a share of all fees paid to the Protocol.
+- Guardians stake ANT to the Court contract and schedule their activation and deactivation for the time period in which they can be drafted to rule on disputes.
+- Court fees and configuration parameters are controlled by a governor (eventually the Aragon Network), but can only be modified for future terms to ensure that parameters can’t change for ongoing disputes.
+- The creator of a dispute must pay fees to cover the maintenance gas costs of the Court and the guardians that will adjudicate their dispute. The governor of the Court receives a share of all fees paid to the Court.
 - Guardians are randomly drafted to adjudicate disputes, where the chance to be drafted is proportional to the amount of ANT they have activated.
 - When drafted, each guardian must commit and reveal their vote for the ruling. Failure to commit or reveal results in a penalty for the guardian.
 - After a ruling is decided, it can be appealed by anyone a certain number of times, after which all active guardians will vote on the last appeal (an unappealable ruling).
@@ -43,26 +43,26 @@ Even though the Aragon Protocol could theoretically resolve any type of binary d
 The `Controller` has four main responsibilities:
 - Permissions management
 - Modules management
-- Protocol terms ("clock") management
-- Protocol configuration management
+- Court terms ("clock") management
+- Court configuration management
 
-The protocol relies on five main modules: `DisputeManager`, `Voting`, `GuardiansRegistry`, `Treasury`, and `PaymentsBook`.
+The Court relies on five main modules: `DisputeManager`, `Voting`, `GuardiansRegistry`, `Treasury`, and `PaymentsBook`.
 Each of these modules are only referenced by the `Controller`; centralizing them allows us to be able to plug or unplug modules easily.
 
-The Protocol terms management and reference is held in `Clock`. Almost every functionality of the protocol needs to ensure the current Protocol term is up-to-date.
+The Court terms management and reference is held in `Clock`. Almost every functionality of the court needs to ensure the current Court term is up-to-date.
 
-Every protocol configuration variable that needs to be check-pointed based on the different terms of the Protocol is referenced in `Config`.
-Note that this is important to be able to guarantee to our users that certain actions they committed to the Protocol will rely always on the same configurations of the protocol that were there at the moment said actions were requested.
+Every Court configuration variable that needs to be check-pointed based on the different terms of the Court is referenced in `Config`.
+Note that this is important to be able to guarantee to our users that certain actions they committed to the Court will rely always on the same configurations of the Court that were there at the moment said actions were requested.
 On the other hand, there are some configuration variables that are related to instantaneous actions. In this case, since we don't need to ensure historic information, these are held on its corresponding module for gas-optimization reasons.
 
 ### Modules
 
-All the modules of the protocol can be switched by new deployed ones. This allows us to have recoverability in case there is a failure in any of the modules.
+All the modules of the Court can be switched by new deployed ones. This allows us to have recoverability in case there is a failure in any of the modules.
 Each module has a reference to the `Controller` through `Controlled`, and `ControlledRecoverable` is a special flavor of `Controlled` to ensure complete recoverability.
 Since some modules handle token assets, we need to be able to move these assets from one module to another in case they are switched.
 
-However, these modules can be frozen at any time, once the protocol has reached a high-level of maturity full-immutability will be guaranteed.
-In case further changes are required a new whole implementation of the protocol can be deployed and it will be a users decision to chose the one they want to use.
+However, these modules can be frozen at any time, once the Court has reached a high-level of maturity full-immutability will be guaranteed.
+In case further changes are required a new whole implementation of the Court can be deployed and it will be a users decision to chose the one they want to use.
 
 Detailed information about each module functionality is described in [section 4](../4-entry-points).
 
@@ -76,21 +76,21 @@ The permissions layer is self-controlled in the `Controller`. This component wor
 All the functionality described above whose access needs to be restricted relies on these addresses.
 The modules governor is the only one allowed to switch modules. This address can be unset at any time to ensure no further changes on the modules can be made.
 Finally the funds governor is the only one allowed to recover assets from the `ControlledRecoverable` modules. As for the modules governor, this address can be unset at any time.
-The config governor is the only one allowed to change all the configuration variables of the protocol. This last one, is the only governor address that is not intended to be unset.
-The protocol settings should be always able to be tweaked to ensure the proper operation of Protocol. To guarantee decentralized governance of these variables, the config governor is meant to be the Aragon Network.
+The config governor is the only one allowed to change all the configuration variables of the Court. This last one, is the only governor address that is not intended to be unset.
+The Court settings should be always able to be tweaked to ensure the proper operation of Court. To guarantee decentralized governance of these variables, the config governor is meant to be the Aragon Network.
 
 Any other modules functionality that needs to be restricted is either relying on these governor addresses as well, or on any of the other modules.
-No other external accounts apart from the `Governor` addresses belong to the protocol implementation.
+No other external accounts apart from the `Governor` addresses belong to the Court implementation.
 
-As described in the [launch process](https://forum.aragon.org/t/aragon-network-launch-phases-and-target-dates/1263) of Aragon Protocol, the governor will be a DAO properly called Aragon Network DAO managed by ANT holders.
+As described in the [launch process](https://forum.aragon.org/t/aragon-network-launch-phases-and-target-dates/1263) of Aragon Court, the governor will be a DAO properly called Aragon Network DAO managed by ANT holders.
 Initially, the Aragon Network DAO will be governed by a small council with a group trusted members from the community and will be transitioned to the ANT holders at the end of the launch process.
 
 ### Entry point
 
-The main entry point of the protocol is `AragonProtocol`, this component inherits from `Controller`.
-This allows to guarantee a single and immutable address to the users of the protocol. `AragonProtocol` does not implement core logic, only the main entry points of the protocol where each request is forwarded to the corresponding modules of the `Controller` to be fulfilled.
+The main entry point of the Court is `AragonCourt`, this component inherits from `Controller`.
+This allows to guarantee a single and immutable address to the users of the Court. `AragonCourt` does not implement core logic, only the main entry points of the Court where each request is forwarded to the corresponding modules of the `Controller` to be fulfilled.
 
-Detailed information about `AragonProtocol` can be found in [section 4](../4-entry-points).
+Detailed information about `AragonCourt` can be found in [section 4](../4-entry-points).
 
 ### Migration Strategies
 
@@ -104,7 +104,7 @@ Detailed information about `AragonProtocol` can be found in [section 4](../4-ent
 
 (*) Assuming there is no easy way to migrate/replicate the current status of the existing module to the new one
 
-(**) If the Guardians Registry status cannot be migrated it would be similar to deploying a new entire protocol
+(**) If the Guardians Registry status cannot be migrated it would be similar to deploying a new entire Court
 
 #### Dispute Manager
 
@@ -193,73 +193,73 @@ Notes:
 
 The present implementation is the first iteration of a crypto-economic protocol designed for reaching consensus over subjective issues which can cause side effects in a purely objective deterministic system, such as a public blockchain.
 
-By definition, it is impossible for Aragon Protocol's rulings to be perceived as correct by every observer, as their own personal biases and values can make them interpret a subjective issue in a different way than the majority of guardians.
+By definition, it is impossible for Aragon Court's rulings to be perceived as correct by every observer, as their own personal biases and values can make them interpret a subjective issue in a different way than the majority of guardians.
 
-It's important that all system participants understand these three concepts and take these into account when interacting with the protocol:
+It's important that all system participants understand these three concepts and take these into account when interacting with the Court:
 
 ### Aragon Court as a Schelling game
 
-Opposed to judges in the legacy legal systems of land jurisdictions, Aragon Protocol guardians are not asked for their impartial opinion on a dispute, but to vote on the ruling they think their fellow guardians will also vote for. Those who vote with the majority are rewarded with tokens that are slashed with guardians that vote for a losing ruling.
+Opposed to judges in the legacy legal systems of land jurisdictions, Aragon Court guardians are not asked for their impartial opinion on a dispute, but to vote on the ruling they think their fellow guardians will also vote for. Those who vote with the majority are rewarded with tokens that are slashed with guardians that vote for a losing ruling.
 
-If the protocol asked for everyone's unbiased opinion, it would be unfair to penalize those in the minority, as they could have done a perfectly fine job and just not agree with the rest. But if you don't slash those in the minority, attacks would be free and therefore the system wouldn't be secure.
+If the Court asked for everyone's unbiased opinion, it would be unfair to penalize those in the minority, as they could have done a perfectly fine job and just not agree with the rest. But if you don't slash those in the minority, attacks would be free and therefore the system wouldn't be secure.
 
-Aragon Protocol is therefore a Schelling game. An easy example of a Schelling game would be if two people are in New York City and they have to meet on a certain day but have no way to coordinate, both would probably pick a recognizable place such as Times Square and go there at noon, as it is the most plausible rational decision making process the other person could do as well.
+Aragon Court is therefore a Schelling game. An easy example of a Schelling game would be if two people are in New York City and they have to meet on a certain day but have no way to coordinate, both would probably pick a recognizable place such as Times Square and go there at noon, as it is the most plausible rational decision making process the other person could do as well.
 
 ### Aragon Court as a 'proof of stake' system
 
-When designing a permissionless protocol, that is one in which any participants can come and go without asking anyone's authorization, one has to assume that any given entity can have multiple identities at the same time.
+When designing a permissionless Court, that is one in which any participants can come and go without asking anyone's authorization, one has to assume that any given entity can have multiple identities at the same time.
 
-Aragon Protocol was designed with this in mind and assumes participants can [Sybil 'attack](https://www.geeksforgeeks.org/sybil-attack/)' the system without it being an issue for the integrity of the protocol. The amount of active tokens of Aragon Protocol's native token (ANT for Aragon Network's deployment) act as the weight for someone's impact. If someone has 50 ANT, it should be equally or more preferable to have all the tokens active under in one identity, than say 10 ANT across five different identities.
+Aragon Court was designed with this in mind and assumes participants can [Sybil 'attack](https://www.geeksforgeeks.org/sybil-attack/)' the system without it being an issue for the integrity of the Court. The amount of active tokens of Aragon Court's native token (ANT for Aragon Network's deployment) act as the weight for someone's impact. If someone has 50 ANT, it should be equally or more preferable to have all the tokens active under in one identity, than say 10 ANT across five different identities.
 
 As in most subjective systems in which consensus decisions are weighted by stake, the integrity of the system can be attacked by a cartel with influence over the decisions of more than 50% of the active stake.
 
-From this we can infer that the security of Aragon Protocol is a function of the market capitalization of its native token. A naive calculation would be to assume that one can attack the integrity of the Protocol by spending 51% of the token's market cap to acquire a majority position. In reality this wouldn't be the case, as acquiring 51% of the tokens of a network will almost always be more expensive than 51% of the initial market cap, specially if there's low liquidity and a fair amount of the supply is already staked and active by honest participants.
+From this we can infer that the security of Aragon Court is a function of the market capitalization of its native token. A naive calculation would be to assume that one can attack the integrity of the Court by spending 51% of the token's market cap to acquire a majority position. In reality this wouldn't be the case, as acquiring 51% of the tokens of a network will almost always be more expensive than 51% of the initial market cap, specially if there's low liquidity and a fair amount of the supply is already staked and active by honest participants.
 
-Even with this in mind, Aragon Protocol has a mechanism to protect an honest minority of guardians from a hostile takeover in the form of a 51% attack: after a certain number of appeal rounds (in which the number of guardians increases geometrically, and therefore the amount of token at stake), there's a final appeal round that will decide the final ruling for the dispute. In the final appeal round, all active guardians are invited to rule, and the final ruling is decided by a majority commit and reveal vote in which participating guardians put all their tokens at stake.
+Even with this in mind, Aragon Court has a mechanism to protect an honest minority of guardians from a hostile takeover in the form of a 51% attack: after a certain number of appeal rounds (in which the number of guardians increases geometrically, and therefore the amount of token at stake), there's a final appeal round that will decide the final ruling for the dispute. In the final appeal round, all active guardians are invited to rule, and the final ruling is decided by a majority commit and reveal vote in which participating guardians put all their tokens at stake.
 
-After the final appeal round votes are tallied, a final ruling is issued and every guardian who participated in the dispute and didn't support the winning ruling is slashed. In the case of a successful 51% attack, the attackers will be rewarded with some tokens from honest guardians. Aragon Protocol will then block withdrawals for every guardian that voted for the winning ruling in the final appeal round. The rationale behind this is that even if Aragon Protocol was successfully attacked, malicious guardians will be locked in for a period of time, allowing honest guardians to exit the system and sell their guardian tokens before the attackers are allowed to withdraw. Therefore, the attack is disincentivized with the threat of losing almost all of the value spent purchasing the tokens.
+After the final appeal round votes are tallied, a final ruling is issued and every guardian who participated in the dispute and didn't support the winning ruling is slashed. In the case of a successful 51% attack, the attackers will be rewarded with some tokens from honest guardians. Aragon Court will then block withdrawals for every guardian that voted for the winning ruling in the final appeal round. The rationale behind this is that even if Aragon Court was successfully attacked, malicious guardians will be locked in for a period of time, allowing honest guardians to exit the system and sell their guardian tokens before the attackers are allowed to withdraw. Therefore, the attack is disincentivized with the threat of losing almost all of the value spent purchasing the tokens.
 
-In conclusion, the security of Aragon Protocol is a function of its market cap, although acquiring a majority stake requires an investment more expensive than half of the initial market cap. By locking withdrawals for winning guardians in final appeal rounds, attackers should expect to lose most of the value spent in acquiring their token position, therefore requiring them to pay an exorbitant amount of money to influence the outcome of just one dispute.
+In conclusion, the security of Aragon Court is a function of its market cap, although acquiring a majority stake requires an investment more expensive than half of the initial market cap. By locking withdrawals for winning guardians in final appeal rounds, attackers should expect to lose most of the value spent in acquiring their token position, therefore requiring them to pay an exorbitant amount of money to influence the outcome of just one dispute.
 
-### Aragon Protocol as an efficient consensus reaching mechanism
+### Aragon Court as an efficient consensus reaching mechanism
 
-Aragon Protocol tries to reach consensus over a ruling involving the minimum number of participating guardians. The optimal number of participants involved needs to tend to zero, that is, everyone's trust in Aragon Protocol is so high, that misbehaving is disincentivized by the very threat of the Protocol's existence.
+Aragon Court tries to reach consensus over a ruling involving the minimum number of participating guardians. The optimal number of participants involved needs to tend to zero, that is, everyone's trust in Aragon Court is so high, that misbehaving is disincentivized by the very threat of the Court's existence.
 
-When a dispute is created in Aragon Protocol, a sortition process is performed to select the guardians that will adjudicate the dispute. A small random set of guardians is drafted from the active guardian pool (weighted by active stake for sybil resistance) and asked to rule on the dispute. This initial number of guardians can be as small as 3 guardians (or even just 1) and they are expected to provide the ruling that a majority vote among all active guardians would have produced.
+When a dispute is created in Aragon Court, a sortition process is performed to select the guardians that will adjudicate the dispute. A small random set of guardians is drafted from the active guardian pool (weighted by active stake for sybil resistance) and asked to rule on the dispute. This initial number of guardians can be as small as 3 guardians (or even just 1) and they are expected to provide the ruling that a majority vote among all active guardians would have produced.
 
 The advantage of this is reducing the number of participants that need to review the case and evidence, resulting a more efficient and cheaper system. Because only a small number of participants is involved, any observer can appeal a decision and make a profit if the ruling ends up being flipped. Every appeal geometrically increases the number of guardians drafted to adjudicate the next round, and after a certain number of appeals, there's a final majority vote in which all active guardians can vote to produce the final ruling.
 
-If guardians were only rewarded when drafted to work, by doing their job really well and maintaining a super honest protocol, they would be decreasing their future returns, as the incentive to create disputes in a highly effective protocol is low, as both parties to the dispute can predict what the outcome will be. If guardians leave the Protocol because the returns are decreasing as a result of a well functioning Protocol, the market cap of the token will decrease, making attacks cheaper.
+If guardians were only rewarded when drafted to work, by doing their job really well and maintaining a super honest Court, they would be decreasing their future returns, as the incentive to create disputes in a highly effective protocol is low, as both parties to the dispute can predict what the outcome will be. If guardians leave the Court because the returns are decreasing as a result of a well functioning Court, the market cap of the token will decrease, making attacks cheaper.
 
-For this reason, Aragon Protocol supports charging payment fees to its users for the right to use the Protocol should a dispute arise. These payment fees are then distributed to all active guardians during that period proportional to their relative stake. Even if no disputes are created in a period of time, guardians should expect a predictable income coming from passive users of the Protocol who are getting security from it even if they don't have the need create disputes.
+For this reason, Aragon Court supports charging payment fees to its users for the right to use the Court should a dispute arise. These payment fees are then distributed to all active guardians during that period proportional to their relative stake. Even if no disputes are created in a period of time, guardians should expect a predictable income coming from passive users of the Court who are getting security from it even if they don't have the need create disputes.
 
-### A glimpse into Aragon Protocol v2 potential improvements
+### A glimpse into Aragon Court v2 potential improvements
 
-Even though we consider the system production ready, this is just the first iteration of the protocol in which we have optimized for simplicity of the mechanism. We plan on working on a future version of the protocol taking into account user feedback and tackling some aspects to make the protocol even more robust and making some attacks even more expensive.
+Even though we consider the system production ready, this is just the first iteration of the Court in which we have optimized for simplicity of the mechanism. We plan on working on a future version of the Court taking into account user feedback and tackling some aspects to make the Court even more robust and making some attacks even more expensive.
 
-At the moment, a ruling can be appealed all the way up to a majority vote happens in the final appeal round. As explained above, this is vulnerable to 51% attacks, even if made really expensive and discouraged by locking winning guardians for a period of time. We did some research on better finality mechanisms and we settled on using futarchy for making the final decision after all appeal rounds occur. By using futarchy, a prediction market can be asked which ruling will make the Protocol be more valuable at some point in the future. This mechanism is not possible to 51% attack, and attackers can expect to lose all their money if honest participants take on the other side of the market to make a profit. You can read a more in-depth description in Luke Duncan's ['Futarchy Protocols' post](https://blog.aragon.one/futarchy-protocols/).
+At the moment, a ruling can be appealed all the way up to a majority vote happens in the final appeal round. As explained above, this is vulnerable to 51% attacks, even if made really expensive and discouraged by locking winning guardians for a period of time. We did some research on better finality mechanisms and we settled on using futarchy for making the final decision after all appeal rounds occur. By using futarchy, a prediction market can be asked which ruling will make the Court be more valuable at some point in the future. This mechanism is not possible to 51% attack, and attackers can expect to lose all their money if honest participants take on the other side of the market to make a profit. You can read a more in-depth description in Luke Duncan's ['Futarchy Protocols' post](https://blog.aragon.one/futarchy-protocols/).
 
-The drafting mechanism currently uses the hash of a future Ethereum block as its randomness seed. Even though the hash of a future block is impossible to predict, the potential miner for a block that will impact a dispute's randomness can decide to drop the block (by not broadcasting it to the network) if its hash is not favorable to them. The miner has the ability to have another drafting chance at the expense of the lost block reward. Given the possibility to use the appeals process all the way up to the entire active guardian set, this vulnerability was considered low risk and decided on using block hash randomness for its simplicity. For a future versions of Aragon Protocol we are exploring using more robust randomness such as a RANDAO mechanism or Keep's Random Beacon.
+The drafting mechanism currently uses the hash of a future Ethereum block as its randomness seed. Even though the hash of a future block is impossible to predict, the potential miner for a block that will impact a dispute's randomness can decide to drop the block (by not broadcasting it to the network) if its hash is not favorable to them. The miner has the ability to have another drafting chance at the expense of the lost block reward. Given the possibility to use the appeals process all the way up to the entire active guardian set, this vulnerability was considered low risk and decided on using block hash randomness for its simplicity. For a future versions of Aragon Court we are exploring using more robust randomness such as a RANDAO mechanism or Keep's Random Beacon.
 
 ## Public API
 
-The following sections aim to deeply describe the functionality exposed by each of the components of the protocol mentioned in [section 2](../2-architecture).
+The following sections aim to deeply describe the functionality exposed by each of the components of the Court mentioned in [section 2](../2-architecture).
 
 ### AragonCourt
 
-`AragonProtocol` is the main entry point of the whole protocol and is only responsible for providing a few entry points to the users of the protocol while orchestrating the rest of the modules to fulfill these request.
-Additionally, as shown in [section 2](../2-architecture), `AragonProtocol` inherits from `Controller`. The inherited functionality is core to architecture of the protocol and can be found in the [next section](./2-controller.md).
+`AragonCourt` is the main entry point of the whole Court and is only responsible for providing a few entry points to the users of the Court while orchestrating the rest of the modules to fulfill these request.
+Additionally, as shown in [section 2](../2-architecture), `AragonCourt` inherits from `Controller`. The inherited functionality is core to architecture of the Court and can be found in the [next section](./2-controller.md).
 To read more information about its responsibilities and how the whole architecture structure looks like, go to [section 2](../2-architecture).
 
 #### Constructor
 
 - **Actor:** Deployer account
 - **Inputs:**
-    - **Term duration:** Duration in seconds per Protocol term
-    - **First-term start time:** Timestamp in seconds when the Protocol will start
+    - **Term duration:** Duration in seconds per Court term
+    - **First-term start time:** Timestamp in seconds when the Court will start
     - **Governor:** Object containing
         - **Funds governor:** Address of the governor allowed to manipulate module's funds
-        - **Config governor:** Address of the governor allowed to manipulate protocol settings
+        - **Config governor:** Address of the governor allowed to manipulate Court settings
         - **Modules governor:** Address of the governor allowed to manipulate module's addresses
     - **Settings:** Object containing
         - **Fee token:** Address of the token contract that is used to pay for the fees
@@ -267,11 +267,11 @@ To read more information about its responsibilities and how the whole architectu
         - **Heartbeat fee:** Amount of fee tokens per dispute to cover terms update costs
         - **Draft fee:**  Amount of fee tokens per guardian to cover the drafting costs
         - **Settle fee:** Amount of fee tokens per guardian to cover round settlement costs
-        - **Evidence terms:** Max submitting evidence period duration in Protocol terms
-        - **Commit terms:** Duration of the commit phase in Protocol terms
-        - **Reveal terms:** Duration of the reveal phase in Protocol terms
-        - **Appeal terms:** Duration of the appeal phase in Protocol terms
-        - **Appeal confirmation terms:** Duration of the appeal confirmation phase in Protocol terms
+        - **Evidence terms:** Max submitting evidence period duration in Court terms
+        - **Commit terms:** Duration of the commit phase in Court terms
+        - **Reveal terms:** Duration of the reveal phase in Court terms
+        - **Appeal terms:** Duration of the appeal phase in Court terms
+        - **Appeal confirmation terms:** Duration of the appeal confirmation phase in Court terms
         - **Penalty permyriad:** ‱ of min active tokens balance to be locked for each drafted guardian (1/10,000)
         - **Final-round reduction:** ‱ of fee reduction for the last appeal round (1/10,000)
         - **First-round guardians number:** Number of guardians to be drafted for the first round of a dispute
@@ -327,29 +327,29 @@ To read more information about its responsibilities and how the whole architectu
 
 ### Controller
 
-The `Controller` is core component of the architecture whose main responsibilities are permissions, modules, Protocol terms, and Protocol configurations management.
+The `Controller` is core component of the architecture whose main responsibilities are permissions, modules, Court terms, and Court configurations management.
 To read more information about its responsibilities and structure, go to [section 2](../2-architecture).
 
 #### Constructor
 
 - **Actor:** Deployer account
 - **Inputs:**
-    - **Term duration:** Duration in seconds per Protocol term
-    - **First-term start time:** Timestamp in seconds when the Protocol will start
+    - **Term duration:** Duration in seconds per Court term
+    - **First-term start time:** Timestamp in seconds when the Court will start
     - **Governor:** Object containing
         - **Funds governor:** Address of the governor allowed to manipulate module's funds
-        - **Config governor:** Address of the governor allowed to manipulate protocol settings
+        - **Config governor:** Address of the governor allowed to manipulate Court settings
         - **Modules governor:** Address of the governor allowed to manipulate module's addresses
     - **Settings:** Object containing
         - **Fee token:** Address of the token contract that is used to pay for the fees
         - **Guardian fee:** Amount of fee tokens paid per drafted guardian per dispute
         - **Draft fee:**  Amount of fee tokens per guardian to cover the drafting costs
         - **Settle fee:** Amount of fee tokens per guardian to cover round settlement costs
-        - **Evidence terms:** Max submitting evidence period duration in Protocol terms
-        - **Commit terms:** Duration of the commit phase in Protocol terms
-        - **Reveal terms:** Duration of the reveal phase in Protocol terms
-        - **Appeal terms:** Duration of the appeal phase in Protocol terms
-        - **Appeal confirmation terms:** Duration of the appeal confirmation phase in Protocol terms
+        - **Evidence terms:** Max submitting evidence period duration in Court terms
+        - **Commit terms:** Duration of the commit phase in Court terms
+        - **Reveal terms:** Duration of the reveal phase in Court terms
+        - **Appeal terms:** Duration of the appeal phase in Court terms
+        - **Appeal confirmation terms:** Duration of the appeal confirmation phase in Court terms
         - **Penalty permyriad:** ‱ of min active tokens balance to be locked for each drafted guardian (1/10,000)
         - **Final-round reduction:** ‱ of fee reduction for the last appeal round (1/10,000)
         - **First-round guardians number:** Number of guardians to be drafted for the first round of a dispute
@@ -362,8 +362,8 @@ To read more information about its responsibilities and structure, go to [sectio
 - **Authentication:** Open
 - **Pre-flight checks:**
     - Ensure that the term duration does not last longer than a year
-    - Ensure that the first Protocol term has not started yet
-    - Ensure that the first-term start time is at least scheduled one Protocol term ahead in the future
+    - Ensure that the first Court term has not started yet
+    - Ensure that the first-term start time is at least scheduled one Court term ahead in the future
     - Ensure that the first-term start time is scheduled earlier than 2 years in the future
     - Ensure that each dispute phase duration is not longer than 8670 terms
     - Ensure that the penalty permyriad is not above 10,000‱
@@ -375,9 +375,9 @@ To read more information about its responsibilities and structure, go to [sectio
     - Ensure that the appeal confirmation collateral factor is greater than zero
     - Ensure that the minimum guardians active balance is greater than zero
 - **State transitions:**
-    - Save the Protocol term duration
-    - Create a new term object for the first Protocol term
-    - Create the initial Protocol configuration object
+    - Save the Court term duration
+    - Create a new term object for the first Court term
+    - Create the initial Court configuration object
     - Create the governor object
 
 #### Fallback
@@ -391,7 +391,7 @@ To read more information about its responsibilities and structure, go to [sectio
 
 #### Set config
 
-- **Actor:** External entity in charge of maintaining the protocol configuration (config governor)
+- **Actor:** External entity in charge of maintaining the Court configuration (config governor)
 - **Inputs:**
     - **From term ID:** Identification number of the term in which the config will be effective at
     - **Settings:** Object containing
@@ -399,11 +399,11 @@ To read more information about its responsibilities and structure, go to [sectio
         - **Guardian fee:** Amount of fee tokens paid per drafted guardian per dispute
         - **Draft fee:**  Amount of fee tokens per guardian to cover the drafting costs
         - **Settle fee:** Amount of fee tokens per guardian to cover round settlement costs
-        - **Evidence terms:** Max submitting evidence period duration in Protocol terms
-        - **Commit terms:** Duration of the commit phase in Protocol terms
-        - **Reveal terms:** Duration of the reveal phase in Protocol terms
-        - **Appeal terms:** Duration of the appeal phase in Protocol terms
-        - **Appeal confirmation terms:** Duration of the appeal confirmation phase in Protocol terms
+        - **Evidence terms:** Max submitting evidence period duration in Court terms
+        - **Commit terms:** Duration of the commit phase in Court terms
+        - **Reveal terms:** Duration of the reveal phase in Court terms
+        - **Appeal terms:** Duration of the appeal phase in Court terms
+        - **Appeal confirmation terms:** Duration of the appeal confirmation phase in Court terms
         - **Penalty permyriad:** ‱ of min active tokens balance to be locked for each drafted guardian (1/10,000)
         - **Final-round reduction:** ‱ of fee reduction for the last appeal round (1/10,000)
         - **First-round guardians number:** Number of guardians to be drafted for the first round of a dispute
@@ -415,7 +415,7 @@ To read more information about its responsibilities and structure, go to [sectio
         - **Min active balance:** Minimum amount of guardian tokens that can be activated
 - **Authentication:** Only config governor
 - **Pre-flight checks:**
-    - Ensure that the Protocol term is up-to-date. If not, perform a heartbeat before continuing the execution
+    - Ensure that the Court term is up-to-date. If not, perform a heartbeat before continuing the execution
     - Ensure that the config changes are being scheduled at least 2 terms in the future
     - Ensure that each dispute phase duration is not longer than 8670 terms
     - Ensure that the penalty permyriad is not above 10,000‱
@@ -427,43 +427,43 @@ To read more information about its responsibilities and structure, go to [sectio
     - Ensure that the appeal confirmation collateral factor is greater than zero
     - Ensure that the minimum guardians active balance is greater than zero
 - **State transitions:**
-    - Update current Protocol term if needed
-    - Create a new Protocol configuration object
+    - Update current Court term if needed
+    - Create a new Court configuration object
     - Create a new future term object for the new configuration
 
 #### Delay start time
 
-- **Actor:** External entity in charge of maintaining the protocol configuration (config governor)
+- **Actor:** External entity in charge of maintaining the Court configuration (config governor)
 - **Inputs:**
-    - **New first-term start time:** New timestamp in seconds when the Protocol will start
+    - **New first-term start time:** New timestamp in seconds when the Court will start
 - **Authentication:** Allowed only to the config governor
 - **Pre-flight checks:**
-    - Ensure that the Protocol has not started yet
+    - Ensure that the Court has not started yet
     - Ensure that the new proposed start time is in the future
 - **State transitions:**
-    - Update the protocol first term start time
+    - Update the Court first term start time
 
 #### Heartbeat
 
-- **Actor:** Any entity incentivized to keep to Protocol term updated
+- **Actor:** Any entity incentivized to keep to Court term updated
 - **Inputs:**
-    - **Max allowed transitions:** Maximum number of transitions allowed, it can be set to zero to denote all the required transitions to update the Protocol to the current term
+    - **Max allowed transitions:** Maximum number of transitions allowed, it can be set to zero to denote all the required transitions to update the Court to the current term
 - **Authentication:** Open
 - **Pre-flight checks:**
     - Ensure that the number of terms to be updated is greater than zero
 - **State transitions:**
-    - Update the Protocol term
+    - Update the Court term
     - Create a new term object for each transitioned new term
 
 #### Ensure current term
 
-- **Actor:** Any entity incentivized to keep to Protocol term updated
+- **Actor:** Any entity incentivized to keep to Court term updated
 - **Inputs:** None
 - **Authentication:** Open
 - **Pre-flight checks:**
-    - Ensure that the required number of transitions to update the Protocol term is not huge
+    - Ensure that the required number of transitions to update the Court term is not huge
 - **State transitions:**
-    - If necessary, update the Protocol term and create a new term object for each transitioned new term
+    - If necessary, update the Court term and create a new term object for each transitioned new term
 
 #### Ensure current term randomness
 
@@ -477,7 +477,7 @@ To read more information about its responsibilities and structure, go to [sectio
 
 #### Set automatic withdrawals
 
-- **Actor:** External entity holding funds in the protocol
+- **Actor:** External entity holding funds in the Court
 - **Inputs:**
     - **Allowed:** Whether the automatic withdrawals for the sender are allowed or not
 - **Authentication:** Open
@@ -487,7 +487,7 @@ To read more information about its responsibilities and structure, go to [sectio
 
 #### Change funds governor
 
-- **Actor:** External entity in charge of maintaining the protocol funds (funds governor)
+- **Actor:** External entity in charge of maintaining the Court funds (funds governor)
 - **Inputs:**
     - **New funds governor:** Address of the new funds governor to be set
 - **Authentication:** Only funds governor
@@ -496,9 +496,9 @@ To read more information about its responsibilities and structure, go to [sectio
 - **State transitions:**
     - Update the funds governor address
 
-#### 4.2.10. Change config governor
+#### Change config governor
 
-- **Actor:** External entity in charge of maintaining the protocol configuration (config governor)
+- **Actor:** External entity in charge of maintaining the Court configuration (config governor)
 - **Inputs:**
     - **New config governor:** Address of the new config governor to be set
 - **Authentication:** Allowed only to the config governor
@@ -507,9 +507,9 @@ To read more information about its responsibilities and structure, go to [sectio
 - **State transitions:**
     - Update the config governor address
 
-#### 4.2.11. Change modules governor
+#### Change modules governor
 
-- **Actor:** External entity in charge of maintaining the protocol modules (modules governor)
+- **Actor:** External entity in charge of maintaining the Court modules (modules governor)
 - **Inputs:**
     - **New modules governor:** Address of the new modules governor to be set
 - **Authentication:** Allowed only to the modules governor
@@ -520,7 +520,7 @@ To read more information about its responsibilities and structure, go to [sectio
 
 #### 4.2.12. Eject funds governor
 
-- **Actor:** External entity in charge of maintaining the protocol funds (funds governor)
+- **Actor:** External entity in charge of maintaining the Court funds (funds governor)
 - **Inputs:** None
 - **Authentication:** Only funds governor
 - **Pre-flight checks:** None
@@ -529,7 +529,7 @@ To read more information about its responsibilities and structure, go to [sectio
 
 #### 4.2.13. Eject modules governor
 
-- **Actor:** External entity in charge of maintaining the protocol modules (modules governor)
+- **Actor:** External entity in charge of maintaining the Court modules (modules governor)
 - **Inputs:** None
 - **Authentication:** Only modules governor
 - **Pre-flight checks:** None
@@ -538,7 +538,7 @@ To read more information about its responsibilities and structure, go to [sectio
 
 #### 4.2.14. Set module
 
-- **Actor:** External entity in charge of maintaining the protocol modules (modules governor)
+- **Actor:** External entity in charge of maintaining the Court modules (modules governor)
 - **Inputs:**
     - **Module ID:** ID of the module to be set
     - **Address:** Address of the module to be set
@@ -550,7 +550,7 @@ To read more information about its responsibilities and structure, go to [sectio
 
 #### 4.2.15. Set modules
 
-- **Actor:** External entity in charge of maintaining the protocol modules (modules governor)
+- **Actor:** External entity in charge of maintaining the Court modules (modules governor)
 - **Inputs:**
     - **New modules' IDs:** List of IDs of the new modules to be set
     - **New modules' addresses:** List of addresses of the new modules to be set
@@ -568,7 +568,7 @@ To read more information about its responsibilities and structure, go to [sectio
 
 #### 4.2.16. Sync module links
 
-- **Actor:** External entity in charge of maintaining the protocol modules (modules governor)
+- **Actor:** External entity in charge of maintaining the Court modules (modules governor)
 - **Inputs:**
     - **Modules to be synced:** List of addresses of connected modules whose implementation links should be synced for the requested module ids
     - **IDs to be set:** List of IDs of the modules to be included in the sync
@@ -581,7 +581,7 @@ To read more information about its responsibilities and structure, go to [sectio
 
 #### 4.2.17. Disable module
 
-- **Actor:** External entity in charge of maintaining the protocol modules (modules governor)
+- **Actor:** External entity in charge of maintaining the Court modules (modules governor)
 - **Inputs:**
     - **Address:** Address of the module to be disabled
 - **Authentication:** Only modules governor
@@ -593,7 +593,7 @@ To read more information about its responsibilities and structure, go to [sectio
 
 #### 4.2.18. Enable module
 
-- **Actor:** External entity in charge of maintaining the protocol modules (modules governor)
+- **Actor:** External entity in charge of maintaining the Court modules (modules governor)
 - **Inputs:**
     - **Address:** Address of the module to be enabled
 - **Authentication:** Only modules governor
@@ -605,7 +605,7 @@ To read more information about its responsibilities and structure, go to [sectio
 
 #### 4.2.19. Set custom function
 
-- **Actor:** External entity in charge of maintaining the protocol modules (modules governor)
+- **Actor:** External entity in charge of maintaining the Court modules (modules governor)
 - **Inputs:**
     - **Signature:** Signature of the function to be customized
     - **Address:** Address of the target that will be forwarded with the function call
@@ -616,7 +616,7 @@ To read more information about its responsibilities and structure, go to [sectio
 
 #### 4.2.20. Grant
 
-- **Actor:** External entity in charge of maintaining the protocol
+- **Actor:** External entity in charge of maintaining the Court
 - **Inputs:**
     - **Role:** ID of the role to be granted
     - **Address:** Address of the entity to grant the role to
@@ -629,7 +629,7 @@ To read more information about its responsibilities and structure, go to [sectio
 
 #### 4.2.21. Revoke
 
-- **Actor:** External entity in charge of maintaining the protocol
+- **Actor:** External entity in charge of maintaining the Court
 - **Inputs:**
     - **Role:** ID of the role to be revoked
     - **Address:** Address of the entity to revoke the role from
@@ -642,7 +642,7 @@ To read more information about its responsibilities and structure, go to [sectio
 
 #### 4.2.22. Freeze
 
-- **Actor:** External entity in charge of maintaining the protocol
+- **Actor:** External entity in charge of maintaining the Court
 - **Inputs:**
     - **Role:** ID of the role to be frozen
 - **Authentication:** Only config governor
@@ -653,7 +653,7 @@ To read more information about its responsibilities and structure, go to [sectio
 
 #### 4.2.23. Bulk
 
-- **Actor:** External entity in charge of maintaining the protocol
+- **Actor:** External entity in charge of maintaining the Court
 - **Inputs:**
     - **Ops:** List of requested operations
     - **Roles:** List of roles for the requested operations
@@ -664,12 +664,12 @@ To read more information about its responsibilities and structure, go to [sectio
 - **State transitions:**
     - Execute all the requested ACL operations
 
-### 4.3. Dispute Manager
+### Dispute Manager
 
 The `DisputeManager` module is in charge of handling all the disputes-related behavior. This is where disputes are created and appealed.
 It is also in charge of computing the final ruling for each dispute, and to settle the rewards and penalties of all the parties involved in the dispute.
 
-#### 4.3.1. Constructor
+#### Constructor
 
 - **Actor:** Deployer account
 - **Inputs:**
@@ -683,7 +683,7 @@ It is also in charge of computing the final ruling for each dispute, and to sett
     - Save the controller address
     - Save the max number of guardians to be drafted per batch
 
-#### 4.3.2. Create dispute
+#### Create dispute
 
 - **Actor:** Controller
 - **Inputs:**
@@ -692,48 +692,48 @@ It is also in charge of computing the final ruling for each dispute, and to sett
     - **Metadata:** Optional metadata that can be used to provide additional information on the dispute to be created
 - **Authentication:** Only the controller is allowed to call this function
 - **Pre-flight checks:**
-    - Ensure that the Protocol term is up-to-date. Otherwise, perform a heartbeat before continuing the execution.
+    - Ensure that the Court term is up-to-date. Otherwise, perform a heartbeat before continuing the execution.
     - Ensure that the number of possible rulings is within some reasonable bounds (hardcoded as constants)
 - **State transitions:**
-    - Update current Protocol term if needed
+    - Update current Court term if needed
     - Create a new dispute object
     - Create an adjudication round object setting the draft term at the end of the evidence submission period
-    - Calculate dispute fees based on the current Protocol configuration
-    - Set the number of guardians to be drafted based on the Protocol configuration at the term when dispute was created
+    - Calculate dispute fees based on the current Court configuration
+    - Set the number of guardians to be drafted based on the Court configuration at the term when dispute was created
     - Pull the required dispute fee amount from the sender to be deposited in the `Treasury` module, revert if the ERC20-transfer wasn't successful
 
-#### 4.3.3. Close evidence period
+#### Close evidence period
 
 - **Actor:** Controller
 - **Inputs:**
     - **Dispute ID:** Dispute identification number
 - **Authentication:** Only the controller is allowed to call this function
 - **Pre-flight checks:**
-    - Ensure that the Protocol term is up-to-date. Otherwise, perform a heartbeat before continuing the execution.
+    - Ensure that the Court term is up-to-date. Otherwise, perform a heartbeat before continuing the execution.
     - Ensure a dispute object with that ID exists
     - Ensure that the current term is at least after the term when the dispute was created
     - Ensure that the dispute evidence period is still open
 - **State transitions:**
     - Update the dispute draft term ID of the first adjudication round to the current term
 
-#### 4.3.4. Draft
+#### Draft
 
 - **Actor:** External entity incentivized by the draft fee they will earn by performing this execution. Alternatively, an altruistic entity to make sure the dispute is drafted
 - **Inputs:**
     - **Dispute ID:** Dispute identification number
 - **Authentication:** Open
 - **Pre-flight checks:**
-    - Ensure that the Protocol term is up-to-date. Otherwise, revert (cannot heartbeat and draft in the same block)
+    - Ensure that the Court term is up-to-date. Otherwise, revert (cannot heartbeat and draft in the same block)
     - Ensure a dispute object with that ID exists
     - Ensure that the last round of the dispute hasn't finished drafting yet
     - Ensure that the draft term for the last round has been reached
     - Ensure that the randomness seed for the current term is either available (current block number within a certain range) or was saved by another draft
 - **State transitions:**
-    - Search up to the maximum batch size of guardians in the `GuardianRegistry` using the current term's randomness seed for entropy, which will lock a certain amount of ANT tokens to each of the drafted guardians based on the penalty permille of the Protocol. The maximum number of guardians to be drafted will depend on the maximum number allowed per batch set in the Protocol and the corresponding number of guardians for the dispute. Additionally, the `GuardiansRegistry` could return fewer guardians than the requested number. To have a better understanding of how the sortition works go to **section X**.
+    - Search up to the maximum batch size of guardians in the `GuardianRegistry` using the current term's randomness seed for entropy, which will lock a certain amount of ANT tokens to each of the drafted guardians based on the penalty permille of the Court. The maximum number of guardians to be drafted will depend on the maximum number allowed per batch set in the Court and the corresponding number of guardians for the dispute. Additionally, the `GuardiansRegistry` could return fewer guardians than the requested number. To have a better understanding of how the sortition works go to **section X**.
     - Update the dispute object with the resultant guardians from the draft. If all the guardians of the dispute have been drafted, transition the dispute to the adjudication phase.
     - Reward the caller with draft fees for each guardian drafted, using the configuration at the term when the dispute was created.
 
-#### 4.3.5. Create appeal
+#### Create appeal
 
 - **Actor:** External entity not in favor of the ruling decided by the drafted guardians during the adjudication phase
 - **Inputs:**
@@ -742,18 +742,18 @@ It is also in charge of computing the final ruling for each dispute, and to sett
     - **Ruling:** Ruling number proposed by the appealer
 - **Authentication:** Open. Implicitly, only accounts that have open an ERC20 allowance with an amount of at least the required appeal collateral to the `DisputeManager` module can call this function
 - **Pre-flight checks:**
-    - Ensure that the Protocol term is up-to-date. Otherwise, perform a heartbeat before continuing the execution.
+    - Ensure that the Court term is up-to-date. Otherwise, perform a heartbeat before continuing the execution.
     - Ensure a dispute object with that ID exists
     - Ensure an adjudication round object with that ID exists for the given dispute
     - Ensure that the adjudication round can be appealed
     - Ensure that the given ruling is different from the one already decided by the drafted guardians
     - Ensure that the given ruling is either refused or one of the possible rulings supported by the `DisputeManager` module
 - **State transitions:**
-    - Update current Protocol term if needed
+    - Update current Court term if needed
     - Create a new appeal object tracking the address and proposed ruling of the appealer
-    - Pull the required appeal collateral from the sender to be deposited in the `Treasury` module, calculating it based on the Protocol configuration when the dispute was created, revert if the ERC20-transfer wasn't successful
+    - Pull the required appeal collateral from the sender to be deposited in the `Treasury` module, calculating it based on the Court configuration when the dispute was created, revert if the ERC20-transfer wasn't successful
 
-#### 4.3.6. Confirm appeal
+#### Confirm appeal
 
 - **Actor:** External entity not in favor of the ruling proposed by a previously submitted appeal
 - **Inputs:**
@@ -762,14 +762,14 @@ It is also in charge of computing the final ruling for each dispute, and to sett
     - **Ruling:** Ruling number proposed by the entity confirming the appeal
 - **Authentication:** Open. Implicitly, only accounts that have open an ERC20 allowance with an amount of at least the required appeal confirmation collateral to the `DisputeManager` module can call this function
 - **Pre-flight checks:**
-    - Ensure that the Protocol term is up-to-date. Otherwise, perform a heartbeat before continuing the execution.
+    - Ensure that the Court term is up-to-date. Otherwise, perform a heartbeat before continuing the execution.
     - Ensure a dispute object with that ID exists
     - Ensure an adjudication round object with that ID exists for the given dispute
     - Ensure that the adjudication round was appeal and can still be confirmed
     - Ensure that the given ruling is different from the one proposed by the appealer
     - Ensure that the given ruling is either refused or one of the possible rulings supported by the `DisputeManager` module
 - **State transitions:**
-    - Update current Protocol term if needed
+    - Update current Court term if needed
     - Create a new adjudication round object and set the draft term right after the end of the final adjudication phase of the current dispute round
     - If the final appeal round hasn't been reached yet:
         - Calculate the number of guardians to be drafted for the new round applying the appeal step factor to the number of guardians drafted for the previous round
@@ -778,10 +778,10 @@ It is also in charge of computing the final ruling for each dispute, and to sett
         - Calculate the number of guardians of the final round as the number of times the minimum ANT active balance is held in the `GuardiansRegistry` module
         - Transition the dispute to the adjudication phase
     - Update the current round appeal object tracking the address and proposed ruling of the account confirming the appeal
-    - Calculate new round fees based on the Protocol configuration at the term when the dispute was created
+    - Calculate new round fees based on the Court configuration at the term when the dispute was created
     - Pull the required appeal confirmation collateral, which includes the new round fees, from the sender to be deposited in the `Treasury` module, revert if the ERC20-transfer wasn't successful
 
-#### 4.3.7. Compute ruling
+#### Compute ruling
 
 - **Actor:** External entity incentivized to execute the final ruling decided for a dispute. Alternatively, an altruistic entity to make sure the dispute is ruled.
 - **Inputs:**
@@ -793,7 +793,7 @@ It is also in charge of computing the final ruling for each dispute, and to sett
 - **State transitions:**
     - Update the final ruling of the dispute object based on the ruling decided by the guardians during the current round or the ruling proposed by the appealer of the previous round in case there was one but wasn't confirmed.
 
-#### 4.3.8. Settle penalties
+#### Settle penalties
 
 - **Actor:** External entity incentivized to slash the losing guardians. Alternatively, an altruistic entity to make sure the dispute is settled.
 - **Inputs:**
@@ -802,13 +802,13 @@ It is also in charge of computing the final ruling for each dispute, and to sett
     - **Max number of guardians to settle:** Maximum number of guardians to be settled during the call. It can be set to zero to denote all the guardians that were drafted for the adjudication round.
 - **Authentication:** Open
 - **Pre-flight checks:**
-    - Ensure that the Protocol term is up-to-date. Otherwise, perform a heartbeat before continuing the execution.
+    - Ensure that the Court term is up-to-date. Otherwise, perform a heartbeat before continuing the execution.
     - Ensure a dispute object with that ID exists
     - Ensure an adjudication round object with that ID exists for the given dispute
     - Ensure that the given round is the first adjudication round of the dispute or that the previous round penalties were already settled
     - Ensure that the adjudication round penalties haven't been settled yet
 - **State transitions:**
-    - Update current Protocol term if needed
+    - Update current Court term if needed
     - In case the final ruling of the dispute has not been computed yet, update the final ruling of the dispute object based on the ruling decided by the guardians during the current round or the ruling proposed by the appealer of the previous round in case there was one but wasn't confirmed.
     - Update the adjudication round object with the number of guardians that voted in favor of the final ruling
     - If the adjudication round being settled is not a final round:
@@ -821,7 +821,7 @@ It is also in charge of computing the final ruling for each dispute, and to sett
         - Ask the `GuardiansRegistry` module to burn all the ANT tokens that were collected during the adjudication round
         - Return the adjudication round fees to the dispute creator or the appeal parties depending on whether the adjudication round was triggered by the `Arbitrable` instance who created the dispute or due to a previous round that was appealed respectively.
 
-#### 4.3.9. Settle reward
+#### Settle reward
 
 - **Actor:** External entity incentivized to reward the winning guardians. Alternatively, an altruistic entity to make sure the dispute is settled.
 - **Inputs:**
@@ -841,7 +841,7 @@ It is also in charge of computing the final ruling for each dispute, and to sett
     - Assign to the guardian the corresponding portion of ANT tokens slashed from the losing guardians
     - Deposit the corresponding portion of guardian fees into the `Treasury` module to the guardian
 
-#### 4.3.10. Settle appeal deposit
+#### Settle appeal deposit
 
 - **Actor:** External entity incentivized to settle the appeal parties. Alternatively, an altruistic entity to make sure the dispute is settled.
 - **Inputs:**
@@ -858,51 +858,51 @@ It is also in charge of computing the final ruling for each dispute, and to sett
     - Mark the adjudication round's appeal as settled
     - Deposit the corresponding portions of the appeal deposits into the `Treasury` module to each party
 
-#### 4.3.11. Ensure can commit
+#### Ensure can commit
 
 - **Actor:** Any entity incentivized to check if it is possible to commit votes for a certain dispute adjudication round
 - **Inputs:**
     - **Vote ID:** Vote identification number
 - **Authentication:** Open
 - **Pre-flight checks:**
-    - Ensure that the Protocol term is up-to-date. Otherwise, perform a heartbeat before continuing the execution.
+    - Ensure that the Court term is up-to-date. Otherwise, perform a heartbeat before continuing the execution.
     - Ensure a dispute and adjudication round exists with that vote ID
     - Ensure votes can still be committed for the adjudication round
 - **State transitions:**
-    - Update current Protocol term if needed
+    - Update current Court term if needed
 
 
-#### 4.3.12. Ensure voter can commit
+#### Ensure voter can commit
 
 - **Actor:** Any entity incentivized to check if it is possible to commit votes for a certain dispute adjudication round
 - **Inputs:**
     - **Vote ID:** Vote identification number
 - **Authentication:** Only active `Voting` modules
 - **Pre-flight checks:**
-    - Ensure that the Protocol term is up-to-date. Otherwise, perform a heartbeat before continuing the execution.
+    - Ensure that the Court term is up-to-date. Otherwise, perform a heartbeat before continuing the execution.
     - Ensure a dispute and adjudication round exists with that vote ID
     - Ensure votes can still be committed for the adjudication round
     - Ensure that the voter was drafted to vote for the adjudication round
 - **State transitions:**
-    - Update current Protocol term if needed
+    - Update current Court term if needed
     - Update the guardian's weight for the adjudication round if its a final round
 
-#### 4.3.13. Ensure voter can reveal
+#### Ensure voter can reveal
 
 - **Actor:** Any entity incentivized to check if it is possible to reveal votes for a certain dispute adjudication round
 - **Inputs:**
     - **Vote ID:** Vote identification number
 - **Authentication:**
 - **Pre-flight checks:**
-    - Ensure that the Protocol term is up-to-date. Otherwise, perform a heartbeat before continuing the execution.
+    - Ensure that the Court term is up-to-date. Otherwise, perform a heartbeat before continuing the execution.
     - Ensure a dispute and adjudication round exists with that vote ID
     - Ensure votes can still be revealed for the adjudication round
 - **State transitions:**
-    - Update current Protocol term if needed
+    - Update current Court term if needed
 
-#### 4.3.14. Set max guardians per draft batch
+#### Set max guardians per draft batch
 
-- **Actor:** External entity in charge of maintaining the protocol configuration (config governor)
+- **Actor:** External entity in charge of maintaining the Court configuration (config governor)
 - **Inputs:**
     - **New max guardians per draft batch:** New max number of guardians to be drafted in each batch
 - **Authentication:** Only config governor
@@ -911,9 +911,9 @@ It is also in charge of computing the final ruling for each dispute, and to sett
 - **State transitions:**
     - Save the max number of guardians to be drafted per batch
 
-#### 4.3.15. Recover funds
+#### Recover funds
 
-- **Actor:** External entity in charge of maintaining the protocol funds (funds governor)
+- **Actor:** External entity in charge of maintaining the Court funds (funds governor)
 - **Inputs:**
     - **Token:** Address of the ERC20-compatible token or ETH to be recovered from the `DisputeManager` module
     - **Recipient:** Address that will receive the funds of the `DisputeManager` module
@@ -923,12 +923,12 @@ It is also in charge of computing the final ruling for each dispute, and to sett
 - **State transitions:**
     - Transfer the whole balance of the `DisputeManager` module to the recipient address, revert if the ERC20-transfer wasn't successful
 
-### 4.4. Guardians Registry
+### Guardians Registry
 
 The `GuardiansRegistry` module is in charge of handling the guardians activity and mainly the different states of their staked balances.
-This module is in the one handling all the staking/unstaking logic for the guardians, all the ANT staked into the Protocol is held by the registry.
+This module is in the one handling all the staking/unstaking logic for the guardians, all the ANT staked into the Court is held by the registry.
 
-#### 4.4.1. Constructor
+#### Constructor
 
 - **Actor:** Deployer account
 - **Inputs:**
@@ -945,9 +945,9 @@ This module is in the one handling all the staking/unstaking logic for the guard
     - Save the guardian token address
     - Save the total active balance limit
 
-#### 4.4.2. Stake
+#### Stake
 
-- **Actor:** Guardian or an external entity incentivized in a guardian of the Protocol
+- **Actor:** Guardian or an external entity incentivized in a guardian of the Court
 - **Inputs:**
     - **Guardian:** Address of the guardian staking the tokens for
     - **Amount:** Amount of tokens to be staked
@@ -958,7 +958,7 @@ This module is in the one handling all the staking/unstaking logic for the guard
     - Update the available balance of the guardian
     - Pull the corresponding amount of guardian tokens from the sender to the `GuardiansRegistry` module, revert if the ERC20-transfer wasn't successful
 
-#### 4.4.3. Unstake
+#### Unstake
 
 - **Actor:** Guardian or an authorized role holder
 - **Inputs:**
@@ -973,7 +973,7 @@ This module is in the one handling all the staking/unstaking logic for the guard
     - Process previous deactivation requests if there is any, increase the guardian's available balance
     - Transfer the requested amount of guardian tokens from the `GuardiansRegistry` module to the guardian, revert if the ERC20-transfer wasn't successful
 
-#### 4.4.4. Activate
+#### Activate
 
 - **Actor:** Guardian or an authorized role holder
 - **Inputs:**
@@ -981,18 +981,18 @@ This module is in the one handling all the staking/unstaking logic for the guard
     - **Amount:** Amount of guardian tokens to be activated for the next term
 - **Authentication:** The guardian or an authorized role holder. Only for guardians with some available balance.
 - **Pre-flight checks:**
-    - Ensure that the Protocol term is up-to-date. Otherwise, perform a heartbeat before continuing the execution.
+    - Ensure that the Court term is up-to-date. Otherwise, perform a heartbeat before continuing the execution.
     - Ensure that the requested amount is greater than zero
     - Ensure that the guardian's available balance is enough for the requested amount
-    - Ensure that the new active balance is greater than the minimum active balance for the Protocol
+    - Ensure that the new active balance is greater than the minimum active balance for the Court
     - Ensure that the total active balance held in the registry does not reach the limit
 - **State transitions:**
-    - Update current Protocol term if needed
+    - Update current Court term if needed
     - Process previous deactivation requests if there is any, increase the guardian's available balance
     - Update the guardian's active balance for the next term
     - Decrease the guardian's available balance
 
-#### 4.4.5. Deactivate
+#### Deactivate
 
 - **Actor:** Guardian or an authorized role holder
 - **Inputs:**
@@ -1000,15 +1000,15 @@ This module is in the one handling all the staking/unstaking logic for the guard
     - **Amount:** Amount of guardian tokens to be deactivated for the next term
 - **Authentication:** The guardian or an authorized role holder. Only for guardians with some activated balance.
 - **Pre-flight checks:**
-    - Ensure that the Protocol term is up-to-date. Otherwise, perform a heartbeat before continuing the execution.
+    - Ensure that the Court term is up-to-date. Otherwise, perform a heartbeat before continuing the execution.
     - Ensure that the unlocked active balance of the guardians is enough for the requested amount
-    - Ensure that the remaining active balance is either zero or greater than the minimum active balance for the Protocol
+    - Ensure that the remaining active balance is either zero or greater than the minimum active balance for the Court
 - **State transitions:**
-    - Update current Protocol term if needed
+    - Update current Court term if needed
     - Process previous deactivation requests if there is any, increase the guardian's available balance
     - Create a new deactivation request object for the next term
 
-#### 4.4.6. Stake and activate
+#### Stake and activate
 
 - **Actor:** Guardian or an authorized role holder
 - **Inputs:**
@@ -1023,7 +1023,7 @@ This module is in the one handling all the staking/unstaking logic for the guard
     - Activate the staked amount if requested. This includes processing pending deactivation requests.
     - Pull the corresponding amount of guardian tokens from the sender to the `GuardiansRegistry` module, revert if the ERC20-transfer wasn't successful
 
-#### 4.4.7. Lock activation
+#### Lock activation
 
 - **Actor:** Guardian or an authorized role holder
 - **Inputs:**
@@ -1037,9 +1037,9 @@ This module is in the one handling all the staking/unstaking logic for the guard
     - Increase the total amount locked for the guardian
     - Increase the amount locked for the guardian by the given lock manager
 
-#### 4.4.8. Unlock activation
+#### Unlock activation
 
-- **Actor:** External entity incentivized to unlock the activation of a guardian of the Protocol
+- **Actor:** External entity incentivized to unlock the activation of a guardian of the Court
 - **Inputs:**
     - **Guardian:** Address of the guardian unlocking the active balance of
     - **Lock manager:** Address of the lock manager controlling the lock
@@ -1056,21 +1056,21 @@ This module is in the one handling all the staking/unstaking logic for the guard
     - Decrease the amount locked for the guardian by the given lock manager
     - Schedule a deactivation if requested
 
-#### 4.4.9. Process deactivation request
+#### Process deactivation request
 
 - **Actor:** External entity incentivized to update guardians available balances
 - **Inputs:**
     - **Guardian:** Address of the guardian to process the deactivation request of
 - **Authentication:** Open
 - **Pre-flight checks:**
-    - Ensure that the Protocol term is up-to-date. Otherwise, perform a heartbeat before continuing the execution.
+    - Ensure that the Court term is up-to-date. Otherwise, perform a heartbeat before continuing the execution.
     - Ensure there is an existing deactivation request for the guardian
     - Ensure that the existing deactivation request can be processed at the current term
 - **State transitions:**
     - Increase the available balance of the guardian
     - Reset the deactivation request of the guardian
 
-#### 4.4.10. Assign tokens
+#### Assign tokens
 
 - **Actor:** `DisputeManager` module
 - **Inputs:**
@@ -1081,7 +1081,7 @@ This module is in the one handling all the staking/unstaking logic for the guard
 - **State transitions:**
     - Increase the guardian's available balance
 
-#### 4.4.11. Burn tokens
+#### Burn tokens
 
 - **Actor:** `DisputeManager` module
 - **Inputs:**
@@ -1091,7 +1091,7 @@ This module is in the one handling all the staking/unstaking logic for the guard
 - **State transitions:**
     - Increase the burn address's available balance
 
-#### 4.4.12. Draft
+#### Draft
 
 - **Actor:** `DisputeManager` module
 - **Inputs:**
@@ -1112,7 +1112,7 @@ This module is in the one handling all the staking/unstaking logic for the guard
     - Update the locked active balance of each drafted guardian
     - Decrease previous deactivation requests if there is any and needed to draft the guardian
 
-#### 4.4.13. Slash or unlock
+#### Slash or unlock
 
 - **Actor:** `DisputeManager` module
 - **Inputs:**
@@ -1128,7 +1128,7 @@ This module is in the one handling all the staking/unstaking logic for the guard
     - Decrease the unlocked balance of each guardian based on their corresponding given amounts
     - In case of a guardian being slashed, decrease their active balance for the next term
 
-#### 4.4.14. Collect tokens
+#### Collect tokens
 
 - **Actor:** `DisputeManager` module
 - **Inputs:**
@@ -1142,7 +1142,7 @@ This module is in the one handling all the staking/unstaking logic for the guard
     - Decrease the active balance of the guardian for the next term
     - Decrease previous deactivation requests if there is any and its necessary to collect the requested amount of tokens from a guardian
 
-#### 4.4.15. Lock withdrawals
+#### Lock withdrawals
 
 - **Actor:** `DisputeManager` module
 - **Inputs:**
@@ -1153,9 +1153,9 @@ This module is in the one handling all the staking/unstaking logic for the guard
 - **State transitions:**
     - Update the guardian's state with the term ID until which their withdrawals will be locked
 
-#### 4.4.16. Set total active balance limit
+#### Set total active balance limit
 
-- **Actor:** External entity in charge of maintaining the protocol configuration (config governor)
+- **Actor:** External entity in charge of maintaining the Court configuration (config governor)
 - **Inputs:**
     - **New total active balance limit:** New limit of total active balance of guardian tokens
 - **Authentication:** Only config governor
@@ -1164,9 +1164,9 @@ This module is in the one handling all the staking/unstaking logic for the guard
 - **State transitions:**
     - Update the total active balance limit
 
-#### 4.4.17. Recover funds
+#### Recover funds
 
-- **Actor:** External entity in charge of maintaining the protocol funds (funds governor)
+- **Actor:** External entity in charge of maintaining the Court funds (funds governor)
 - **Inputs:**
     - **Token:** Address of the ERC20-compatible token or ETH to be recovered from the `GuardiansRegistry` module
     - **Recipient:** Address that will receive the funds of the `GuardiansRegistry` module
@@ -1176,12 +1176,12 @@ This module is in the one handling all the staking/unstaking logic for the guard
 - **State transitions:**
     - Transfer the whole balance of the `GuardiansRegistry` module to the recipient address, revert if the ERC20-transfer wasn't successful
 
-### 4.5. Voting
+### Voting
 
 The `Voting` module is in charge of handling all the votes submitted by the drafted guardians and computing the tallies to ensure the final ruling of a dispute once finished.
-In particular, the first version of the protocol uses a commit-reveal mechanism. Therefore, the `Voting` module allows guardians to commit and reveal their votes, and leaked other guardians votes.
+In particular, the first version of the Court uses a commit-reveal mechanism. Therefore, the `Voting` module allows guardians to commit and reveal their votes, and leaked other guardians votes.
 
-#### 4.5.1. Constructor
+#### Constructor
 
 - **Actor:** Deployer account
 - **Inputs:**
@@ -1192,7 +1192,7 @@ In particular, the first version of the protocol uses a commit-reveal mechanism.
 - **State transitions:**
     - Save the controller address
 
-#### 4.5.2. Delegate
+#### Delegate
 
 - **Actor:** Any guardian that could potentially be drafted for an adjudication round or an authorized role holder
 - **Inputs:**
@@ -1203,7 +1203,7 @@ In particular, the first version of the protocol uses a commit-reveal mechanism.
 - **State transitions:**
     - Set the voter's delegate
 
-#### 4.5.3. Create
+#### Create
 
 - **Actor:** `DisputeManager` module
 - **Inputs:**
@@ -1214,7 +1214,7 @@ In particular, the first version of the protocol uses a commit-reveal mechanism.
 - **State transitions:**
     - Create a new vote object
 
-#### 4.5.3. Commit
+#### Commit
 
 - **Actor:** Guardian drafted for an adjudication round or an authorized role holder
 - **Inputs:**
@@ -1230,7 +1230,7 @@ In particular, the first version of the protocol uses a commit-reveal mechanism.
 - **State transitions:**
     - Create a cast vote object for the sender
 
-#### 4.5.4. Leak
+#### Leak
 
 - **Actor:** External entity incentivized to slash a guardian
 - **Inputs:**
@@ -1245,7 +1245,7 @@ In particular, the first version of the protocol uses a commit-reveal mechanism.
 - **State transitions:**
     - Update the voter's cast vote object marking it as leaked
 
-#### 4.5.5. Reveal
+#### Reveal
 
 - **Actor:** Guardian drafted for an adjudication round
 - **Inputs:**
@@ -1262,18 +1262,18 @@ In particular, the first version of the protocol uses a commit-reveal mechanism.
     - Update the voter's cast vote object saving the corresponding outcome
     - Update the vote object tally
 
-## 4.6. PaymentsBook
+## PaymentsBook
 
-The `PaymentsBook` module is in charge of collecting any extra payments paid by users to use Aragon Protocol.
+The `PaymentsBook` module is in charge of collecting any extra payments paid by users to use Aragon Court.
 This module is simply in charge of collecting any type of payment and distributing it to the corresponding parties: guardians and the governor.
-Aragon Protocol does not explicitly require users to provide these extra payments on-chain. The idea is that any custom mechanism can be built on top and then verified by guardians handling arising disputes.
+Aragon Court does not explicitly require users to provide these extra payments on-chain. The idea is that any custom mechanism can be built on top and then verified by guardians handling arising disputes.
 
-#### 4.6.1. Constructor
+#### Constructor
 
 - **Actor:** Deployer account
 - **Inputs:**
     - **Controller:** Address of the `Controller` contract that centralizes all the modules being used
-    - **Period duration:** Duration of the payment period in Protocol terms
+    - **Period duration:** Duration of the payment period in Court terms
     - **Governor share permyriad:** Initial ‱ of the collected payments that will be saved for the governor (1/10,000)
 - **Authentication:** Open
 - **Pre-flight checks:**
@@ -1285,9 +1285,9 @@ Aragon Protocol does not explicitly require users to provide these extra payment
     - Save the period duration
     - Save the governor share permyriad
 
-#### 4.6.2. Pay
+#### Pay
 
-- **Actor:** Users of the Protocol
+- **Actor:** Users of the Court
 - **Inputs:**
     - **Token:** Address of the token being used for the payment
     - **Amount:** Amount of tokens being paid
@@ -1301,9 +1301,9 @@ Aragon Protocol does not explicitly require users to provide these extra payment
     - Update the total amount collected for the governor during the current period
     - Pull the corresponding amount of tokens from the sender to be deposited in the `PaymentsBook` module, revert if the EC20-transfer wasn't successful or if the ETH received does not match the requested one
 
-#### 4.6.3. Claim guardian share
+#### Claim guardian share
 
-- **Actor:** Guardians of the Protocol
+- **Actor:** Guardians of the Court
 - **Inputs:**
     - **Period ID:** Period identification number
     - **Guardian:** Address of the guardian claiming the shares for
@@ -1318,9 +1318,9 @@ Aragon Protocol does not explicitly require users to provide these extra payment
     - Mark the sender's share as claimed for the requested period and token
     - Transfer the corresponding tokens to the sender, revert if the transfer wasn't successful
 
-#### 4.6.4. Claim governor share
+#### Claim governor share
 
-- **Actor:** External entity in charge of maintaining the protocol configuration (config governor)
+- **Actor:** External entity in charge of maintaining the Court configuration (config governor)
 - **Inputs:**
     - **Period ID:** Period identification number
     - **Tokens:** List of addresses of the tokens being claimed
@@ -1333,7 +1333,7 @@ Aragon Protocol does not explicitly require users to provide these extra payment
     - Mark the governor's share as claimed for the requested period and token
     - Transfer the corresponding tokens to the config governor address, revert if the transfer wasn't successful
 
-#### 4.6.5. Ensure period balance details
+#### Ensure period balance details
 
 - **Actor:** External entity incentivized in updating the parameters to determine the guardian's share for each period
 - **Inputs:**
@@ -1344,9 +1344,9 @@ Aragon Protocol does not explicitly require users to provide these extra payment
 - **State transitions:**
     - Pick a random term checkpoint included in the requested period using the next period's start term randomness, and save the total ANT active balance in the `GuardiansRegistry` at that term for the requested period
 
-#### 4.6.12. Set governor share permyriad
+#### Set governor share permyriad
 
-- **Actor:** External entity in charge of maintaining the protocol configuration (config governor)
+- **Actor:** External entity in charge of maintaining the Court configuration (config governor)
 - **Inputs:**
     - **New governor share permyriad:** New ‱ of the collected payments that will be saved for the governor (1/10,000)
 - **Authentication:** Only config governor
@@ -1355,9 +1355,9 @@ Aragon Protocol does not explicitly require users to provide these extra payment
 - **State transitions:**
     - Update the governor share permyriad
 
-#### 4.6.13. Recover funds
+#### Recover funds
 
-- **Actor:** External entity in charge of maintaining the protocol funds (funds governor)
+- **Actor:** External entity in charge of maintaining the Court funds (funds governor)
 - **Inputs:**
     - **Token:** Address of the ERC20-compatible token or ETH to be recovered from the `PaymentsBook` module
     - **Recipient:** Address that will receive the funds of the `PaymentsBook` module
@@ -1367,13 +1367,13 @@ Aragon Protocol does not explicitly require users to provide these extra payment
 - **State transitions:**
     - Transfer the whole balance of the `PaymentsBook` module to the recipient address, revert if the transfer wasn't successful
 
-### 4.7. Treasury
+### Treasury
 
 The `Treasury` module is in charge of handling the token assets related to the disputes process.
 The staked ANT of the guardians and the payments fees of the users are the only assets excluded from the `Treasury`; those are handled in the `GuardianRegistry` and `PaymentBook`, respectively.
 Except from those, the `Treasury` stores the rest of the fees, deposits, and collaterals required to back the different adjudication rounds of a dispute.
 
-#### 4.7.1. Constructor
+#### Constructor
 
 - **Actor:** Deployer account
 - **Inputs:**
@@ -1384,7 +1384,7 @@ Except from those, the `Treasury` stores the rest of the fees, deposits, and col
 - **State transitions:**
     - Save the controller address
 
-#### 4.7.2. Assign
+#### Assign
 
 - **Actor:** `DisputeManager` module
 - **Inputs:**
@@ -1397,7 +1397,7 @@ Except from those, the `Treasury` stores the rest of the fees, deposits, and col
 - **State transitions:**
     - Increase the token balance of the recipient based on the requested amount
 
-#### 4.7.3. Withdraw
+#### Withdraw
 
 - **Actor:** External entity owning a certain amount of tokens of the `Treasury` module or an authorized role holder.
 - **Inputs:**
@@ -1416,9 +1416,9 @@ Except from those, the `Treasury` stores the rest of the fees, deposits, and col
     - Reduce the token balance of the caller based on the requested amount
     - Transfer the requested token amount to the recipient address, revert if the ERC20-transfer wasn't successful
 
-#### 4.7.5. Recover funds
+#### Recover funds
 
-- **Actor:** External entity in charge of maintaining the protocol funds (funds governor)
+- **Actor:** External entity in charge of maintaining the Court funds (funds governor)
 - **Inputs:**
     - **Token:** Address of the ERC20-compatible token or ETH to be recovered from the `Treasury` module
     - **Recipient:** Address that will receive the funds of the `Treasury` module
@@ -1428,19 +1428,19 @@ Except from those, the `Treasury` stores the rest of the fees, deposits, and col
 - **State transitions:**
     - Transfer the whole balance of the `Treasury` module to the recipient address, revert if the ERC20-transfer wasn't successful
 
-## 5. Data structures
+## Data structures
 
 The following sections aim to describe the different data structures used by each of the modules described in [section 4](../4-entry-points).
 
-### 5.1. AragonProtocol
+### AragonCourt
 
-`AragonProtocol` does not rely on any custom data structure, but it relies on the data structures defined by the `Controller`. These can be explored in the [next section](./2-controller.md).
+`AragonCourt` does not rely on any custom data structure, but it relies on the data structures defined by the `Controller`. These can be explored in the [next section](./2-controller.md).
 
-### 5.2. Controller
+### Controller
 
 The following objects are the data-structures used by the `Controller`:
 
-#### 5.2.1. Governor
+#### Governor
 
 The governor object includes the following fields:
 
@@ -1448,36 +1448,36 @@ The governor object includes the following fields:
 - **Config:** Address allowed to change the different configurations of the whole system
 - **Modules:** Address allowed to plug/unplug modules from the system
 
-#### 5.2.2. Module
+#### Module
 
 The module object includes the following fields:
 
 - **ID:** ID associated to a module
 - **Disabled:** Whether the module is disabled
 
-#### 5.2.3. Config
+#### Config
 
 The config object includes the following fields:
 
 - **Fees config:** Fees config object
 - **Disputes config:** Disputes config object
-- **Min active balance:** Minimum amount of tokens guardians have to activate to participate in the Protocol
+- **Min active balance:** Minimum amount of tokens guardians have to activate to participate in the Court
 
-#### 5.2.4. Fees config
+#### Fees config
 
 The fees config object includes the following fields:
 
-- **Token:** ERC20 token to be used for the fees of the Protocol
+- **Token:** ERC20 token to be used for the fees of the Court
 - **Final round reduction:** Permyriad of fees reduction applied for final appeal round (1/10,000)
 - **Guardian fee:** Amount of tokens paid to draft a guardian to adjudicate a dispute
 - **Draft fee:** Amount of tokens paid per round to cover the costs of drafting guardians
 - **Settle fee:** Amount of tokens paid per round to cover the costs of slashing guardians
 
-#### 5.2.5. Disputes config
+#### Disputes config
 
 The disputes config object includes the following fields:
 
-- **Evidence terms:** Max submitting evidence period duration in Protocol terms
+- **Evidence terms:** Max submitting evidence period duration in Court terms
 - **Commit terms:** Committing period duration in terms
 - **Reveal terms:** Revealing period duration in terms
 - **Appeal terms:** Appealing period duration in terms
@@ -1490,7 +1490,7 @@ The disputes config object includes the following fields:
 - **Appeal collateral factor:** Permyriad multiple of dispute fees (guardians, draft, and settlements) required to appeal a preliminary ruling (1/10,000)
 - **Appeal confirmation collateral factor:** Permyriad multiple of dispute fees (guardians, draft, and settlements) required to confirm appeal (1/10,000)
 
-#### 5.2.6. Term
+#### Term
 
 The term object includes the following fields:
 
@@ -1498,11 +1498,11 @@ The term object includes the following fields:
 - **Randomness block number:** Block number for entropy
 - **Randomness:** Entropy from randomness block number's hash
 
-### 5.3. Dispute Manager
+### Dispute Manager
 
 The following objects are the data-structures used by the `DisputeManager`:
 
-#### 5.3.1. Dispute
+#### Dispute
 
 The dispute object includes the following fields:
 
@@ -1513,7 +1513,7 @@ The dispute object includes the following fields:
 - **Dispute state:** State of a dispute: pre-draft, adjudicating, or ruled
 - **Adjudication rounds:** List of adjudication rounds for each dispute
 
-#### 5.3.2. Adjudication round
+#### Adjudication round
 
 The adjudication round object includes the following fields:
 
@@ -1530,14 +1530,14 @@ The adjudication round object includes the following fields:
 - **Collected tokens:** Total amount of tokens collected from losing guardians
 - **Appeal:** Appeal-related information of a round
 
-#### 5.3.3. Guardian state
+#### Guardian state
 
 The guardian state object includes the following fields:
 
 - **Weight:** Weight computed for a guardian on a round
 - **Rewarded:** Whether or not a drafted guardian was rewarded
 
-#### 5.3.4. Appeal
+#### Appeal
 
 The appeal object includes the following fields:
 
@@ -1547,40 +1547,40 @@ The appeal object includes the following fields:
 - **Opposed ruling:** Ruling opposed to an appeal
 - **Settled:** Whether or not an appeal has been settled
 
-### 5.3. Guardians Registry
+### Guardians Registry
 
 The following objects are the data-structures used by the `GuardiansRegistry`:
 
-#### 5.3.1. Guardian
+#### Guardian
 
 The guardian object includes the following fields:
 
 - **ID:** Identification number of each guardian
 - **Locked balance:** Maximum amount of tokens that can be slashed based on the guardian's drafts
-- **Active balance:** Tokens activated for the Protocol that can be locked in case the guardian is drafted
+- **Active balance:** Tokens activated for the Court that can be locked in case the guardian is drafted
 - **Available balance:** Available tokens that can be withdrawn at any time
 - **Withdrawals lock term ID:** Term identification number until which guardian's withdrawals will be locked
 - **Deactivation request:** Pending deactivation request of a guardian
 
-#### 5.3.2. Deactivation request
+#### Deactivation request
 
 The deactivation request object includes the following fields:
 
 - **Amount:** Amount requested for deactivation
 - **Available termId:** ID of the term when guardians can withdraw their requested deactivation tokens
 
-#### 5.3.2. Activation locks
+#### Activation locks
 
 The activation locks object includes the following fields:
 
 - **Total:** Total amount of active balance locked for a guardian
 - **Available termId:** List of locked amounts indexed by lock manager
 
-### 5.4. Voting
+### Voting
 
 The following objects are the data-structures used by the `Voting`:
 
-#### 5.4.1. Vote
+#### Vote
 
 The vote object includes the following fields:
 
@@ -1589,18 +1589,18 @@ The vote object includes the following fields:
 - **Cast votes:** List of cast votes indexed by voters addresses
 - **Outcomes tally:** Tally for each of the possible outcomes
 
-#### 5.4.2. Cast vote
+#### Cast vote
 
 The cast vote object includes the following fields:
 
 - **Commitment:** Hash of the outcome casted by the voter
 - **Outcome:** Outcome submitted by the voter
 
-### 5.4. Voting
+### Voting
 
 The following objects are the data-structures used by the `Voting`:
 
-#### 5.4.1. Vote
+#### Vote
 
 The vote object includes the following fields:
 
@@ -1609,46 +1609,46 @@ The vote object includes the following fields:
 - **Cast votes:** List of cast votes indexed by voters addresses
 - **Outcomes tally:** Tally for each of the possible outcomes
 
-#### 5.4.2. Cast vote
+#### Cast vote
 
 The cast vote object includes the following fields:
 
 - **Commitment:** Hash of the outcome casted by the voter
 - **Outcome:** Outcome submitted by the voter
 
-### 5.5. PaymentsBook
+### PaymentsBook
 
 The following objects are the data-structures used by the `PaymentsBook`:
 
-#### 5.5.1. Period
+#### Period
 
 The period object includes the following fields:
 
 - **Balance checkpoint:** Term identification number of a period used to fetch the total active balance of the guardians registry
-- **Total active balance:** Total amount of guardian tokens active in the Protocol at the corresponding period checkpoint
+- **Total active balance:** Total amount of guardian tokens active in the Court at the corresponding period checkpoint
 - **Guardians shares:** List of total amount collected for the guardians during a period indexed by token
 - **Governor shares:** List of total amount collected for the governor during a period indexed by token
 - **Claimed guardians:** List of guardians that have claimed their share for a period, indexed by guardian address and token
 
-### 5.7. Treasury
+### Treasury
 
 The `Treasury` module does not rely on any custom data structure.
 
-## 6. External interface
+## External interface
 
 The following sections aim to complement [section 4](../4-entry-points)'s description of each module's external entry points with their view-only access points and emitted events.
 
-### 6.1. AragonProtocol
+### AragonCourt
 
-#### 6.1.1 Events
+#### Events
 
-No custom events are implemented by `AragonProtocol`.
+No custom events are implemented by `AragonCourt`.
 
-#### 6.1.2. Getters
+#### Getters
 
-The following functions are state getters provided by `AragonProtocol`:
+The following functions are state getters provided by `AragonCourt`:
 
-##### 6.1.2.1. Dispute fees
+##### Dispute fees
 
 - **Inputs:** None
 - **Pre-flight checks:** None
@@ -1657,124 +1657,124 @@ The following functions are state getters provided by `AragonProtocol`:
     **Fee token:** ERC20 token used for the fees
     **Fee amount:** Total amount of fees that must be allowed to the recipient
 
-##### 6.1.2.2. Payments recipient
+##### Payments recipient
 
 - **Inputs:** None
 - **Pre-flight checks:** None
 - **Outputs:**
     **Recipient:** Address where the payment fees must be transferred to
 
-### 6.2. Controller
+### Controller
 
-#### 6.2.1 Events
+#### Events
 
 The following events are emitted by the `Controller`:
 
-##### 6.2.1.1. Config changed
+##### Config changed
 
 - **Name:** `NewConfig`
 - **Args:**
-    - **From term ID:** Identification number of the Protocol term when the config change will happen
-    - **Protocol config ID:** Identification number of the Protocol config to be changed
+    - **From term ID:** Identification number of the Court term when the config change will happen
+    - **Court config ID:** Identification number of the Court config to be changed
 
-##### 6.2.1.2. Start time delayed
+##### Start time delayed
 
 - **Name:** `StartTimeDelayed`
 - **Args:**
-    - **Previous first term start time:** Previous timestamp in seconds when the Protocol will start
-    - **Current first-term start time:** New timestamp in seconds when the Protocol will start
+    - **Previous first term start time:** Previous timestamp in seconds when the Court will start
+    - **Current first-term start time:** New timestamp in seconds when the Court will start
 
-##### 6.2.1.3. Heartbeat
+##### Heartbeat
 
 - **Name:** `Heartbeat`
 - **Args:**
-    - **Previous term ID:** Identification number of the Protocol term before the transition
-    - **Current term ID:** Identification number of the Protocol term after the transition
+    - **Previous term ID:** Identification number of the Court term before the transition
+    - **Current term ID:** Identification number of the Court term after the transition
 
-##### 6.2.1.4. Automatic withdrawals changed
+##### Automatic withdrawals changed
 
 - **Name:** `AutomaticWithdrawalsAllowedChanged`
 - **Args:**
     - **Holder:** Address of the token holder whose automatic withdrawals config was changed
     - **Allowed:** Whether automatic withdrawals are allowed or not for the given holder
 
-##### 6.2.1.5. Module set
+##### Module set
 
 - **Name:** `ModuleSet`
 - **Args:**
     - **Module ID:** ID of the module being set
     - **Address:** Address of the module being set
 
-##### 6.2.1.6. Module enabled
+##### Module enabled
 
 - **Name:** `ModuleEnabled`
 - **Args:**
     - **Module ID:** ID of the enabled module
     - **Address:** Address of the enabled module
 
-##### 6.2.1.7. Module disabled
+##### Module disabled
 
 - **Name:** `ModuleDisabled`
 - **Args:**
     - **Module ID:** ID of the disabled module
     - **Address:** Address of the disabled module
 
-##### 6.2.1.8. Custom function set
+##### Custom function set
 
 - **Name:** `CustomFunctionSet`
 - **Args:**
     - **Signature:** Signature of the function being set
     - **Target:** Address set as the target for the custom function
 
-##### 6.2.1.9. Funds governor changed
+##### Funds governor changed
 
 - **Name:** `FundsGovernorChanged`
 - **Args:**
     - **Previous governor:** Address of the previous funds governor
     - **Current governor:** Address of the current funds governor
 
-##### 6.2.1.10. Config governor changed
+##### Config governor changed
 
 - **Name:** `ConfigGovernorChanged`
 - **Args:**
     - **Previous governor:** Address of the previous config governor
     - **Current governor:** Address of the current config governor
 
-##### 6.2.1.11. Modules governor changed
+##### Modules governor changed
 
 - **Name:** `ModulesGovernorChanged`
 - **Args:**
     - **Previous governor:** Address of the previous modules governor
     - **Current governor:** Address of the current modules governor
 
-##### 6.2.1.12. Granted
+##### Granted
 
 - **Name:** `Granted`
 - **Args:**
     - **Role:** ID of the role that was granted
     - **Who:** Address of the entity that was granted
 
-##### 6.2.1.13. Revoked
+##### Revoked
 
 - **Name:** `Revoked`
 - **Args:**
     - **Role:** ID of the role that was revoked
     - **Who:** Address of the entity that was revoked
 
-##### 6.2.1.14. Frozen
+##### Frozen
 
 - **Name:** `Frozen`
 - **Args:**
     - **Role:** ID of the role that was frozen
 
-#### 6.2.2. Getters
+#### Getters
 
 The following functions are state getters provided by the `Controller`:
 
-##### 6.2.2.3. Config
+##### Config
 
 - **Inputs:**
-    - **Term ID:** Identification number of the term querying the Protocol config of
+    - **Term ID:** Identification number of the term querying the Court config of
 - **Pre-flight checks:** None
 - **Outputs:**
     - **Fee token:** Address of the token used to pay for fees
@@ -1783,11 +1783,11 @@ The following functions are state getters provided by the `Controller`:
         - **Draft fee:** Amount of fee tokens per guardian to cover the drafting cost
         - **Settle fee:** Amount of fee tokens per guardian to cover round settlement cost
     - **Round state durations:** Array containing the durations in terms of the different phases of a dispute:
-        - **Evidence terms:** Max submitting evidence period duration in Protocol terms
-        - **Commit terms:** Commit period duration in Protocol terms
-        - **Reveal terms:** Reveal period duration in Protocol terms
-        - **Appeal terms:** Appeal period duration in Protocol terms
-        - **Appeal confirmation terms:** Appeal confirmation period duration in Protocol terms
+        - **Evidence terms:** Max submitting evidence period duration in Court terms
+        - **Commit terms:** Commit period duration in Court terms
+        - **Reveal terms:** Reveal period duration in Court terms
+        - **Appeal terms:** Appeal period duration in Court terms
+        - **Appeal confirmation terms:** Appeal confirmation period duration in Court terms
     - **Permyriads:** Array containing permyriads information:
         - **Penalty pct:** Permyriad of min active tokens balance to be locked for each drafted guardian (‱ - 1/10,000)
         - **Final round reduction:** Permyriad of fee reduction for the last appeal round (‱ - 1/10,000)
@@ -1800,60 +1800,60 @@ The following functions are state getters provided by the `Controller`:
         - **Appeal collateral factor:** Multiple of dispute fees (guardians, draft, and settlements) required to appeal a preliminary ruling
         - **Appeal confirm collateral factor:** Multiple of dispute fees (guardians, draft, and settlements) required to confirm appeal
 
-##### 6.2.2.4. Drafts config
+##### Drafts config
 
 - **Inputs:**
-    - **Term ID:** Identification number of the term querying the Protocol drafts config of
+    - **Term ID:** Identification number of the term querying the Court drafts config of
 - **Pre-flight checks:** None
 - **Outputs:**
-    - **Fee token:** ERC20 token to be used for the fees of the Protocol
+    - **Fee token:** ERC20 token to be used for the fees of the Court
     - **Draft fee:** Amount of fee tokens per guardian to cover the drafting cost
     - **Penalty pct:** Permyriad of min active tokens balance to be locked for each drafted guardian (‱ - 1/10,000)
 
-##### 6.2.2.5. Minimum ANT active balance
+##### Minimum ANT active balance
 
 - **Inputs:**
-    - **Term ID:** Identification number of the term querying the Protocol min active balance of
+    - **Term ID:** Identification number of the term querying the Court min active balance of
 - **Pre-flight checks:** None
 - **Outputs:**
-    - **Min active balance:** Minimum amount of guardian tokens guardians have to activate to participate in the Protocol
+    - **Min active balance:** Minimum amount of guardian tokens guardians have to activate to participate in the Court
 
-##### 6.2.2.6. Config change term ID
+##### Config change term ID
 
 - **Inputs:** None
 - **Pre-flight checks:** None
 - **Outputs:**
     - **Config change term ID:** Term identification number of the next scheduled config change
 
-##### 6.2.2.7. Term duration
+##### Term duration
 
 - **Inputs:** None
 - **Pre-flight checks:** None
 - **Outputs:**
-    - **Term duration:** Duration in seconds of the Protocol term
+    - **Term duration:** Duration in seconds of the Court term
 
-##### 6.2.2.8. Last ensured term ID
+##### Last ensured term ID
 
 - **Inputs:** None
 - **Pre-flight checks:** None
 - **Outputs:**
     - **Last ensured term ID:** Identification number of the last ensured term
 
-##### 6.2.2.9. Current term ID
+##### Current term ID
 
 - **Inputs:** None
 - **Pre-flight checks:** None
 - **Outputs:**
     - **Current term ID:** Identification number of the current term
 
-##### 6.2.2.10. Needed transitions
+##### Needed transitions
 
 - **Inputs:** None
 - **Pre-flight checks:** None
 - **Outputs:**
-    - **Needed transitions:** Number of terms the Protocol should transition to be up-to-date
+    - **Needed transitions:** Number of terms the Court should transition to be up-to-date
 
-##### 6.2.2.11. Term
+##### Term
 
 - **Inputs:**
     - **Term ID:** Identification number of the term being queried
@@ -1863,7 +1863,7 @@ The following functions are state getters provided by the `Controller`:
     - **Randomness BN:** Block number used for randomness in the requested term
     - **Randomness:** Randomness computed for the requested term
 
-##### 6.2.2.12. Term randomness
+##### Term randomness
 
 - **Inputs:**
     - **Term ID:** Identification number of the term being queried
@@ -1872,7 +1872,7 @@ The following functions are state getters provided by the `Controller`:
 - **Outputs:**
     - **Term randomness:** Randomness of the requested term
 
-##### 6.2.2.13. Are withdrawals allowed for
+##### Are withdrawals allowed for
 
 - **Inputs:**
     - **Address:** Address of the token holder querying if withdrawals are allowed for
@@ -1880,28 +1880,28 @@ The following functions are state getters provided by the `Controller`:
 - **Outputs:**
     - **Allowed:** True if the given holder accepts automatic withdrawals of their tokens, false otherwise
 
-##### 6.2.2.14. Funds governor
+##### Funds governor
 
 - **Inputs:** None
 - **Pre-flight checks:** None
 - **Outputs:**
     - **Funds governor:** Address of the funds governor
 
-##### 6.2.2.15. Config governor
+##### Config governor
 
 - **Inputs:** None
 - **Pre-flight checks:** None
 - **Outputs:**
     - **Config governor:** Address of the config governor
 
-##### 6.2.2.16. Modules governor
+##### Modules governor
 
 - **Inputs:** None
 - **Pre-flight checks:** None
 - **Outputs:**
     - **Modules governor:** Address of the modules governor
 
-##### 6.2.2.17. Is module active
+##### Is module active
 
 - **Inputs:**
     - **Module ID:** ID of the module being queried
@@ -1911,7 +1911,7 @@ The following functions are state getters provided by the `Controller`:
 - **Outputs:**
     - **Active:** Whether the requested module is active
 
-##### 6.2.2.18. Module by address
+##### Module by address
 
 - **Inputs:**
     - **Address:** Address of the module being queried
@@ -1920,7 +1920,7 @@ The following functions are state getters provided by the `Controller`:
     - **Module ID:** ID of the module associated to the given address
     - **Active:** Whether the requested module is active
 
-##### 6.2.2.19. Module by ID
+##### Module by ID
 
 - **Inputs:**
     - **Module ID:** ID of the module being queried
@@ -1928,7 +1928,7 @@ The following functions are state getters provided by the `Controller`:
 - **Outputs:**
     - **Module address:** Address of the module queried
 
-##### 6.2.2.20. Custom function
+##### Custom function
 
 - **Inputs:**
     - **Signature:** Signature of the function being queried
@@ -1936,42 +1936,42 @@ The following functions are state getters provided by the `Controller`:
 - **Outputs:**
     - **Address:** Address of the target where the given signature will be forwarded
 
-##### 6.2.2.21. Dispute Manager
+##### Dispute Manager
 
 - **Inputs:** None
 - **Pre-flight checks:** None
 - **Outputs:**
-    - **Protocol address:** Address of the `DisputeManager` module set
+    - **Court address:** Address of the `DisputeManager` module set
 
-##### 6.2.2.22. Guardians registry
+##### Guardians registry
 
 - **Inputs:** None
 - **Pre-flight checks:** None
 - **Outputs:**
     - **Guardians registry address:** Address of the `GuardiansRegistry` module set
 
-##### 6.2.2.23. Voting
+##### Voting
 
 - **Inputs:** None
 - **Pre-flight checks:** None
 - **Outputs:**
     - **Voting address:** Address of the `Voting` module set
 
-##### 6.2.2.24. PaymentsBook
+##### PaymentsBook
 
 - **Inputs:** None
 - **Pre-flight checks:** None
 - **Outputs:**
     - **Payments book address:** Address of the `PaymentsBook` module set
 
-##### 6.2.2.25. Treasury
+##### Treasury
 
 - **Inputs:** None
 - **Pre-flight checks:** None
 - **Outputs:**
     - **Treasury address:** Address of the `Treasury` module set
 
-##### 6.2.2.26. Has role
+##### Has role
 
 - **Inputs:**
     - **Who**: Address of the entity being queried
@@ -1980,7 +1980,7 @@ The following functions are state getters provided by the `Controller`:
 - **Outputs:**
     - **Has:** Whether the given entity has the requested role or not
 
-##### 6.2.2.27. Is role frozen
+##### Is role frozen
 
 - **Inputs:**
     - **Role**: ID of the role being queried
@@ -1988,13 +1988,13 @@ The following functions are state getters provided by the `Controller`:
 - **Outputs:**
     - **Frozen:** Whether the given role is frozen or not
 
-### 6.3. Dispute Manager
+### Dispute Manager
 
-#### 6.3.1 Events
+#### Events
 
 The following events are emitted by the `DisputeManager`:
 
-##### 6.3.1.1. New dispute
+##### New dispute
 
 - **Name:** `NewDispute`
 - **Args:**
@@ -2003,14 +2003,14 @@ The following events are emitted by the `DisputeManager`:
     - **Draft term ID:** Identification number of the term when the dispute will be able to be drafted
     - **Metadata:** Optional metadata that can be used to provide additional information on the created dispute
 
-##### 6.3.1.2. Evidence period closed
+##### Evidence period closed
 
 - **Name:** `EvidencePeriodClosed`
 - **Args:**
     - **Dispute ID:** Identification number of the dispute that has changed
     - **Term ID:** Term ID in which the dispute evidence period has been closed
 
-##### 6.3.1.3. Guardian drafted
+##### Guardian drafted
 
 - **Name:** `GuardianDrafted`
 - **Args:**
@@ -2018,14 +2018,14 @@ The following events are emitted by the `DisputeManager`:
     - **Round ID:** Identification number of the dispute round that was drafted
     - **Guardian:** Address of the guardian drafted for the dispute
 
-##### 6.3.1.4. Dispute changed
+##### Dispute changed
 
 - **Name:** `DisputeStateChanged`
 - **Args:**
     - **Dispute ID:** Identification number of the dispute that has changed
     - **State:** New dispute state: pre-draft, adjudicating, or ruled
 
-##### 6.3.1.5. Ruling appealed
+##### Ruling appealed
 
 - **Name:** `RulingAppealed`
 - **Args:**
@@ -2033,7 +2033,7 @@ The following events are emitted by the `DisputeManager`:
     - **Round ID:** Identification number of the adjudication round appealed
     - **Ruling:** Ruling appealed in favor of
 
-##### 6.3.1.6. Ruling appeal confirmed
+##### Ruling appeal confirmed
 
 - **Name:** `RulingAppealConfirmed`
 - **Args:**
@@ -2041,14 +2041,14 @@ The following events are emitted by the `DisputeManager`:
     - **Round ID:** Identification number of the adjudication round whose appeal was confirmed
     - **Draft term ID:** Identification number of the term when the next round will be able to be drafted
 
-##### 6.3.1.7. Ruling computed
+##### Ruling computed
 
 - **Name:** `RulingComputed`
 - **Args:**
     - **Dispute ID:** Identification number of the dispute being ruled
     - **Ruling:** Final ruling decided for the dispute
 
-##### 6.3.1.8. Penalties settled
+##### Penalties settled
 
 - **Name:** `PenaltiesSettled`
 - **Args:**
@@ -2056,7 +2056,7 @@ The following events are emitted by the `DisputeManager`:
     - **Round ID:** Identification number of the adjudication round settled
     - **Collected tokens:** Total amount of guardian tokens that were collected from slashed guardians for the requested round
 
-##### 6.3.1.9. Reward settled
+##### Reward settled
 
 - **Name:** `RewardSettled`
 - **Args:**
@@ -2064,25 +2064,25 @@ The following events are emitted by the `DisputeManager`:
     - **Round ID:** Identification number of the adjudication round settled
     - **Guardian:** Address of the guardian rewarded
 
-##### 6.3.1.10. Appeal deposit settled
+##### Appeal deposit settled
 
 - **Name:** `AppealDepositSettled`
 - **Args:**
     - **Dispute ID:** Identification number of the dispute whose round's appeal was settled
     - **Round ID:** Identification number of the adjudication round whose appeal was settled
 
-##### 6.3.1.11. Max guardians per draft batch changed
+##### Max guardians per draft batch changed
 
 - **Name:** `MaxGuardiansPerDraftBatchChanged`
 - **Args:**
     - **Previous max guardians per draft batch:** Previous max number of guardians to be drafted per batch
     - **Current max guardians per draft batch:** New max number of guardians to be drafted per batch
 
-#### 6.3.2. Getters
+#### Getters
 
 The following functions are state getters provided by the `DisputeManager`:
 
-##### 6.3.2.1. Dispute fees
+##### Dispute fees
 
 - **Inputs:** None
 - **Pre-flight checks:** None
@@ -2090,7 +2090,7 @@ The following functions are state getters provided by the `DisputeManager`:
     - **Fee token:** Address of the ERC20 token used for the fees
     - **Total fee:** Total amount of fees required to create a dispute in the next draft term
 
-##### 6.3.2.2. Dispute
+##### Dispute
 
 - **Inputs:**
     - **Dispute ID:** Identification number of the dispute being queried
@@ -2103,7 +2103,7 @@ The following functions are state getters provided by the `DisputeManager`:
     - **Final ruling:** The winning ruling in case the dispute is finished
     - **Last round ID:** Identification number of the last round created for the dispute
 
-##### 6.3.2.3. Round
+##### Round
 
 - **Inputs:**
     - **Dispute ID:** Identification number of the dispute being queried
@@ -2121,7 +2121,7 @@ The following functions are state getters provided by the `DisputeManager`:
     - **Coherent guardians:** Number of guardians that voted in favor of the final ruling in the requested round
     - **State:** Adjudication state of the requested round
 
-##### 6.3.2.4. Appeal
+##### Appeal
 
 - **Inputs:**
     - **Dispute ID:** Identification number of the dispute being queried
@@ -2135,7 +2135,7 @@ The following functions are state getters provided by the `DisputeManager`:
     - **Taker:** Address of the account confirming the appeal of the given round
     - **Opposed ruling:** Ruling confirmed by the appeal taker of the given round
 
-##### 6.3.2.5. Next round details
+##### Next round details
 
 - **Inputs:**
     - **Dispute ID:** Identification number of the dispute being queried
@@ -2153,7 +2153,7 @@ The following functions are state getters provided by the `DisputeManager`:
     - **Appeal deposit:** Amount to be deposit of fees for a regular round at the given term
     - **Confirm appeal deposit:** Total amount of fees for a regular round at the given term
 
-##### 6.3.2.6. Guardian
+##### Guardian
 
 - **Inputs:**
     - **Dispute ID:** Identification number of the dispute being queried
@@ -2166,13 +2166,13 @@ The following functions are state getters provided by the `DisputeManager`:
     - **Weight:** Guardian weight drafted for the requested round
     - **Rewarded:** Whether or not the given guardian was rewarded based on the requested round
 
-### 6.4. Guardians Registry
+### Guardians Registry
 
-#### 6.4.1 Events
+#### Events
 
 The following events are emitted by the `GuardiansRegistry`:
 
-##### 6.4.1.1. Staked
+##### Staked
 
 - **Name:** `Staked`
 - **Args:**
@@ -2180,7 +2180,7 @@ The following events are emitted by the `GuardiansRegistry`:
     - **Amount:** Amount of tokens to be staked
     - **Total:** Total staked balance on the registry
 
-##### 6.4.1.2. Unstaked
+##### Unstaked
 
 - **Name:** `Unstaked`
 - **Args:**
@@ -2188,7 +2188,7 @@ The following events are emitted by the `GuardiansRegistry`:
     - **Amount:** Amount of tokens to be unstaked
     - **Total:** Total staked balance on the registry
 
-##### 6.4.1.3. Guardian activated
+##### Guardian activated
 
 - **Name:** `GuardianActivated`
 - **Args:**
@@ -2196,7 +2196,7 @@ The following events are emitted by the `GuardiansRegistry`:
     - **Amount:** Amount of guardian tokens activated
     - **From term ID:** Identification number of the term in which the guardian tokens will be activated
 
-##### 6.4.1.4. Guardian deactivation requested
+##### Guardian deactivation requested
 
 - **Name:** `GuardianDeactivationRequested`
 - **Args:**
@@ -2204,7 +2204,7 @@ The following events are emitted by the `GuardiansRegistry`:
     - **Amount:** Amount of guardian tokens to be deactivated
     - **Available term ID:** Identification number of the term in which the requested tokens will be deactivated
 
-##### 6.4.1.5. Guardian deactivation processed
+##### Guardian deactivation processed
 
 - **Name:** `GuardianDeactivationProcessed`
 - **Args:**
@@ -2213,7 +2213,7 @@ The following events are emitted by the `GuardiansRegistry`:
     - **Available term ID:** Identification number of the term in which the requested tokens will be deactivated
     - **Processed term ID:** Identification number of the term in which the given deactivation was processed
 
-##### 6.4.1.6. Guardian deactivation updated
+##### Guardian deactivation updated
 
 - **Name:** `GuardianDeactivationUpdated`
 - **Args:**
@@ -2222,7 +2222,7 @@ The following events are emitted by the `GuardiansRegistry`:
     - **Available term ID:** Identification number of the term in which the requested tokens will be deactivated
     - **Updated term ID:** Identification number of the term in which the given deactivation was updated
 
-##### 6.4.1.7. Guardian activation lock changed
+##### Guardian activation lock changed
 
 - **Name:** `GuardianActivationLockChanged`
 - **Args:**
@@ -2231,21 +2231,21 @@ The following events are emitted by the `GuardiansRegistry`:
     - **Amount:** New activation locked amount of the guardian
     - **Total:** New total activation lock of the guardian
 
-##### 6.4.1.8. Guardian balance locked
+##### Guardian balance locked
 
 - **Name:** `GuardianBalanceLocked`
 - **Args:**
     - **Guardian:** Address of the guardian whose active balance was locked
     - **Amount:** New amount locked to the guardian
 
-##### 6.4.1.9. Guardian balance unlocked
+##### Guardian balance unlocked
 
 - **Name:** `GuardianBalanceUnlocked`
 - **Args:**
     - **Guardian:** Address of the guardian whose active balance was unlocked
     - **Amount:** Amount of active locked that was unlocked to the guardian
 
-##### 6.4.1.10. Guardian slashed
+##### Guardian slashed
 
 - **Name:** `GuardianSlashed`
 - **Args:**
@@ -2253,20 +2253,20 @@ The following events are emitted by the `GuardiansRegistry`:
     - **Amount:** Amount of guardian tokens slashed from the guardian active tokens
     - **Effective term ID:** Identification number of the term when the guardian active balance will be updated
 
-##### 6.4.1.11. Guardian tokens assigned
+##### Guardian tokens assigned
 
 - **Name:** `GuardianTokensAssigned`
 - **Args:**
     - **Guardian:** Address of the guardian receiving tokens
     - **Amount:** Amount of guardian tokens assigned to the staked balance of the guardian
 
-##### 6.4.1.12. Guardian tokens burned
+##### Guardian tokens burned
 
 - **Name:** `GuardianTokensBurned`
 - **Args:**
     - **Amount:** Amount of guardian tokens burned to the zero address
 
-##### 6.4.1.13. Guardian tokens collected
+##### Guardian tokens collected
 
 - **Name:** `GuardianTokensCollected`
 - **Args:**
@@ -2274,50 +2274,50 @@ The following events are emitted by the `GuardiansRegistry`:
     - **Amount:** Amount of guardian tokens collected from the guardian active tokens
     - **Effective term ID:** Identification number of the term when the guardian active balance will be updated
 
-##### 6.4.1.14. Total active balance limit changed
+##### Total active balance limit changed
 
 - **Name:** `TotalActiveBalanceLimitChanged`
 - **Args:**
     - **Previous limit:** Previous total active balance limit
     - **Current limit:** Current total active balance limit
 
-#### 6.4.2. Getters
+#### Getters
 
 The following functions are state getters provided by the `GuardiansRegistry`:
 
-##### 6.4.2.1. Guardian token
+##### Guardian token
 - **Inputs:** None
 - **Pre-flight checks:** None
 - **Outputs:**
     - **Guardian token:** Address of the guardian token
 
-##### 6.4.2.2. Total supply
+##### Total supply
 - **Inputs:** None
 - **Pre-flight checks:** None
 - **Outputs:**
     - **Amount:** Total supply of guardian tokens staked
 
-##### 6.4.2.3. Total active balance
+##### Total active balance
 - **Inputs:** None
 - **Pre-flight checks:** None
 - **Outputs:**
     - **Amount:** Total amount of active guardian tokens
 
-##### 6.4.2.4. Total active balance at
+##### Total active balance at
 - **Inputs:**
     - **Term ID:** Identification number of the term to query on
 - **Pre-flight checks:** None
 - **Outputs:**
     - **Amount:** Total amount of active guardian tokens at the given term ID
 
-##### 6.4.2.5. Balance of
+##### Balance of
 - **Inputs:**
     - **Guardian:** Address of the guardian querying the staked balance of
 - **Pre-flight checks:** None
 - **Outputs:**
     - **Amount:** Total balance of tokens held by a guardian
 
-##### 6.4.2.6. Detailed balance of
+##### Detailed balance of
 - **Inputs:**
     - **Guardian:** Address of the guardian querying the detailed balance information of
 - **Pre-flight checks:** None
@@ -2327,7 +2327,7 @@ The following functions are state getters provided by the `GuardiansRegistry`:
     - **Locked:** Amount of active tokens that are locked due to ongoing disputes
     - **Pending deactivation:** Amount of active tokens that were requested for deactivation
 
-##### 6.4.2.7. Active balance of at
+##### Active balance of at
 - **Inputs:**
     - **Guardian:** Address of the guardian querying the active balance of
     - **Term ID:** Identification number of the term to query on
@@ -2335,14 +2335,14 @@ The following functions are state getters provided by the `GuardiansRegistry`:
 - **Outputs:**
     - **Amount:** Amount of active tokens for guardian
 
-##### 6.4.2.8. Unlocked active balance of
+##### Unlocked active balance of
 - **Inputs:**
     - **Guardian:** Address of the guardian querying the unlocked active balance of
 - **Pre-flight checks:** None
 - **Outputs:**
     - **Amount:** Amount of active tokens of a guardian that are not locked due to ongoing disputes
 
-##### 6.4.2.9. Deactivation request
+##### Deactivation request
 - **Inputs:**
     - **Guardian:** Address of the guardian querying the deactivation request of
 - **Pre-flight checks:** None
@@ -2350,7 +2350,7 @@ The following functions are state getters provided by the `GuardiansRegistry`:
     - **Amount:** Amount of tokens to be deactivated
     - **Available term ID:** Term in which the deactivated amount will be available
 
-##### 6.4.2.10. Activation lock
+##### Activation lock
 - **Inputs:**
     - **Guardian:** Address of the guardian querying the activation lock of
     - **Lock manager:** Address of the lock manager querying the activation lock of
@@ -2359,40 +2359,40 @@ The following functions are state getters provided by the `GuardiansRegistry`:
     - **Amount:** Lock activation amount controlled by the given lock manager
     - **Total:** Total activation lock for the given guardian
 
-##### 6.4.2.11. Withdrawals lock term ID
+##### Withdrawals lock term ID
 - **Inputs:**
     - **Guardian:** Address of the guardian querying the lock term ID of
 - **Pre-flight checks:** None
 - **Outputs:**
     - **Term ID:** Term ID in which the guardian's withdrawals will be unlocked (due to final rounds)
 
-##### 6.4.2.12. Total active balance limit
+##### Total active balance limit
 - **Inputs:** None
 - **Pre-flight checks:** None
 - **Outputs:**
     - **Total active balance limit:** Maximum amount of total active balance that can be held in the registry
 
-##### 6.4.2.13. Guardian ID
+##### Guardian ID
 - **Inputs:**
     - **Guardian:** Address of the guardian querying the ID of
 - **Pre-flight checks:** None
 - **Outputs:**
     - **Guardian ID:** Identification number associated to a guardian address, zero in case it wasn't registered yet
 
-### 6.5. Voting
+### Voting
 
-#### 6.5.1 Events
+#### Events
 
 The following events are emitted by the `Voting`:
 
-##### 6.5.1.1. Voting created
+##### Voting created
 
 - **Name:** `VotingCreated`
 - **Args:**
     - **Vote ID:** Identification number of the new vote instance that has been created
     - **Possible outcomes:** Number of possible outcomes of the new vote instance that has been created
 
-##### 6.5.1.2. Vote committed
+##### Vote committed
 
 - **Name:** `VoteCommitted`
 - **Args:**
@@ -2400,7 +2400,7 @@ The following events are emitted by the `Voting`:
     - **Voter:** Address of the voter that has committed the vote
     - **Commitment:** Hashed outcome of the committed vote
 
-##### 6.5.1.3. Vote revealed
+##### Vote revealed
 
 - **Name:** `VoteRevealed`
 - **Args:**
@@ -2408,7 +2408,7 @@ The following events are emitted by the `Voting`:
     - **Voter:** Address of the voter whose vote has been revealed
     - **Outcome:** Outcome of the vote that has been revealed
 
-##### 6.5.1.4. Vote leaked
+##### Vote leaked
 
 - **Name:** `VoteLeaked`
 - **Args:**
@@ -2416,19 +2416,18 @@ The following events are emitted by the `Voting`:
     - **Voter:** Address of the voter whose vote has been leaked
     - **Outcome:** Outcome of the vote that has been leaked
 
-##### 6.5.1.5. Delegate set
+##### Delegate set
 
 - **Name:** `DelegateSet`
 - **Args:**
     - **Voter:** Address of the voter principal
     - **Delegate:** Address of the delegate 
 
-
-#### 6.5.2. Getters
+#### Getters
 
 The following functions are state getters provided by the `Voting`:
 
-##### 6.5.2.1. Max allowed outcome
+##### Max allowed outcome
 
 - **Inputs:**
     - **Vote ID:** Vote identification number
@@ -2437,7 +2436,7 @@ The following functions are state getters provided by the `Voting`:
 - **Outputs:**
     - **Max outcome:** Max allowed outcome for the given vote instance
 
-##### 6.5.2.2. Winning outcome
+##### Winning outcome
 
 - **Inputs:**
     - **Vote ID:** Vote identification number
@@ -2446,7 +2445,7 @@ The following functions are state getters provided by the `Voting`:
 - **Outputs:**
     - **Winning outcome:** Winning outcome of the given vote instance or refused in case it's missing
 
-##### 6.5.2.3. Outcome tally
+##### Outcome tally
 
 - **Inputs:**
     - **Vote ID:** Vote identification number
@@ -2456,7 +2455,7 @@ The following functions are state getters provided by the `Voting`:
 - **Outputs:**
     - **Tally:** Tally of the outcome being queried for the given vote instance
 
-##### 6.5.2.4. Is valid outcome
+##### Is valid outcome
 
 - **Inputs:**
     - **Vote ID:** Vote identification number
@@ -2466,7 +2465,7 @@ The following functions are state getters provided by the `Voting`:
 - **Outputs:**
     - **Valid:** True if the given outcome is valid for the requested vote instance, false otherwise
 
-##### 6.5.2.5. Voter outcome
+##### Voter outcome
 
 - **Inputs:**
     - **Vote ID:** Vote identification number querying the outcome of
@@ -2476,7 +2475,7 @@ The following functions are state getters provided by the `Voting`:
 - **Outputs:**
     - **Outcome:** Outcome of the voter for the given vote instance
 
-##### 6.5.2.6. Has voted in favor of
+##### Has voted in favor of
 
 - **Inputs:**
     - **Vote ID:** Vote identification number querying if a voter voted in favor of a certain outcome
@@ -2487,7 +2486,7 @@ The following functions are state getters provided by the `Voting`:
 - **Outputs:**
     - **In favor:** True if the given voter voted in favor of the given outcome, false otherwise
 
-##### 6.5.2.7. Voters in favor of
+##### Voters in favor of
 
 - **Inputs:**
     - **Vote ID:** Vote identification number querying if a voter voted in favor of a certain outcome
@@ -2498,7 +2497,7 @@ The following functions are state getters provided by the `Voting`:
 - **Outputs:**
     - **In favor:** List of results to tell whether a voter voted in favor of the given outcome or not
 
-##### 6.5.2.8. Is delegate of
+##### Is delegate of
 
 - **Inputs:**
     - **Voter:** Address of the guardian voting on behalf of
@@ -2507,13 +2506,13 @@ The following functions are state getters provided by the `Voting`:
 - **Outputs:**
     - **Allowed:** True if the given delegate currently represents the voter
 
-### 6.6. PaymentsBook
+### PaymentsBook
 
-#### 6.6.1 Events
+#### Events
 
 The following events are emitted by the `PaymentsBook`:
 
-##### 6.6.1.1. Payment received
+##### Payment received
 
 - **Name:** `PaymentReceived`
 - **Args:**
@@ -2523,7 +2522,7 @@ The following events are emitted by the `PaymentsBook`:
     - **Amount:** Amount of tokens being paid
     - **Data:** Arbitrary data
 
-##### 6.6.1.2. Guardian share claimed
+##### Guardian share claimed
 
 - **Name:** `GuardianShareClaimed`
 - **Args:**
@@ -2532,7 +2531,7 @@ The following events are emitted by the `PaymentsBook`:
     - **Token:** Address of the token used for the share
     - **Amount:** Amount of tokens the guardian received for the requested period
 
-##### 6.6.1.3. Governor share claimed
+##### Governor share claimed
 
 - **Name:** `GovernorShareClaimed`
 - **Args:**
@@ -2540,40 +2539,40 @@ The following events are emitted by the `PaymentsBook`:
     - **Token:** Address of the token used for the share
     - **Amount:** Amount of tokens transferred to the governor address
 
-##### 6.6.1.4. Governor share changed
+##### Governor share changed
 
 - **Name:** `GovernorSharePctChanged`
 - **Args:**
     - **Previous governor share:** Previous permyriad of collected payments that was being allocated to the governor
     - **Current governor share:** Current permyriad of collected payments that will be allocated to the governor
 
-#### 6.6.2. Getters
+#### Getters
 
 The following functions are state getters provided by the `PaymentsBook`:
 
-##### 6.6.2.1. Period duration
+##### Period duration
 
 - **Inputs:** None
 - **Pre-flight checks:** None
 - **Outputs:**
-    - **Duration:** Duration of a payment period in Protocol terms
+    - **Duration:** Duration of a payment period in Court terms
 
-##### 6.6.2.2. Governor share
+##### Governor share
 
 - **Inputs:** None
 - **Pre-flight checks:** None
 - **Outputs:**
-    - **Governor share:** Permyriad of collected payments that will be allocated to the governor of the Protocol (‱ - 1/10,000)
+    - **Governor share:** Permyriad of collected payments that will be allocated to the governor of the Court (‱ - 1/10,000)
 
-##### 6.6.2.3. Current period ID
+##### Current period ID
 
 - **Inputs:** None
 - **Pre-flight checks:**
-    - Ensure that the Protocol first term has already started
+    - Ensure that the Court first term has already started
 - **Outputs:**
     - **Period ID:** Identification number of the current period
 
-##### 6.6.2.4. Period shares details
+##### Period shares details
 
 - **Inputs:**
     - **Period ID:** Identification number of the period being queried
@@ -2583,16 +2582,16 @@ The following functions are state getters provided by the `PaymentsBook`:
     - **Guardians share:** Total amount collected for the guardians during a period
     - **Governor share:** Total amount collected for the governor during a period
 
-##### 6.6.2.5. Period balance details
+##### Period balance details
 
 - **Inputs:**
     - **Period ID:** Identification number of the period being queried
 - **Pre-flight checks:** None
 - **Outputs:**
-    - **Balance checkpoint:** Protocol term ID of a period used to fetch the total active balance of the guardians registry
-    - **Total active balance:** Total amount of guardian tokens active in the Protocol at the corresponding period checkpoint
+    - **Balance checkpoint:** Court term ID of a period used to fetch the total active balance of the guardians registry
+    - **Total active balance:** Total amount of guardian tokens active in the Court at the corresponding period checkpoint
 
-##### 6.6.2.6. Guardian share
+##### Guardian share
 
 - **Inputs:**
     - **Period ID:** Identification number of the period being queried
@@ -2603,7 +2602,7 @@ The following functions are state getters provided by the `PaymentsBook`:
 - **Outputs:**
     - **Amounts:** List of token amounts collected for the guardian in the given period
 
-##### 6.6.2.7. Can guardian claim
+##### Can guardian claim
 
 - **Inputs:**
     - **Period ID:** Identification number of the period being queried
@@ -2613,7 +2612,7 @@ The following functions are state getters provided by the `PaymentsBook`:
 - **Outputs:**
     - **Claimed:** List of results considering true if the guardian's share can be claimed for the given period and token, false otherwise
 
-##### 6.6.2.8. Governor share
+##### Governor share
 
 - **Inputs:**
     - **Period ID:** Identification number of the period being queried
@@ -2622,7 +2621,7 @@ The following functions are state getters provided by the `PaymentsBook`:
 - **Outputs:**
     - **Amounts:** List of token amount collected for the governor in the given period
 
-##### 6.6.2.9. Can governor claim
+##### Can governor claim
 
 - **Inputs:**
     - **Period ID:** Identification number of the period being queried
@@ -2631,13 +2630,13 @@ The following functions are state getters provided by the `PaymentsBook`:
 - **Outputs:**
     - **Claimed:** List of results considering true if the governor's share can be claimed for the given period and token, false otherwise
 
-### 6.7. Treasury
+### Treasury
 
-#### 6.7.1 Events
+#### Events
 
 The following events are emitted by the `Treasury`:
 
-##### 6.7.1.1. Assign
+##### Assign
 
 - **Name:** `Assign`
 - **Args:**
@@ -2646,7 +2645,7 @@ The following events are emitted by the `Treasury`:
     - **To:** Address of the account that has received the tokens
     - **Amount:** Number of tokens assigned to the recipient account
 
-##### 6.7.1.2. Withdraw
+##### Withdraw
 
 - **Name:** `Withdraw`
 - **Args:**
@@ -2655,11 +2654,11 @@ The following events are emitted by the `Treasury`:
     - **To:** Address of the account that has received the tokens
     - **Amount:** Number of tokens withdrawn to the recipient account
 
-#### 6.7.2. Getters
+#### Getters
 
 The following functions are state getters provided by the `Treasury`:
 
-##### 6.7.2.1. Balance of
+##### Balance of
 
 - **Inputs:**
     - **Token:** Address of the ERC20 token querying a holder's the balance of
@@ -2668,13 +2667,13 @@ The following functions are state getters provided by the `Treasury`:
 - **Outputs:**
     - **Balance:** Amount of tokens the holder owns
 
-## 7. Additional documentation
+## Further Readings
 
 The following documents complement the technical specification:
 
 - Aragon v2 [blog post](https://aragon.org/blog/2)
 
-The following documents describe Aragon Court, a pre-cursor to Aragon Protocol, and may also be useful for historical understanding:
+The following documents describe Aragon Court, a pre-cursor to Aragon Court, and may also be useful for historical understanding:
 
 - Aragon Network [white paper](https://github.com/aragon/whitepaper)
 - Aragon Network [launch phases](https://forum.aragon.org/t/aragon-network-launch-phases-and-target-dates)
@@ -2682,65 +2681,65 @@ The following documents describe Aragon Court, a pre-cursor to Aragon Protocol, 
 - Court v1 initial [forum post](https://forum.aragon.org/t/aragon-court-v1/691)
 - Proposal agreements description [blog post](https://blog.aragon.one/proposal-agreements-and-the-aragon-court/)
 
-## 8. Testing guide
+## Testing guide
 
-This guide aims to cover all the things you should know in order to try Aragon Protocol or integrate your application with it.
+This guide aims to cover all the things you should know in order to try Aragon Court or integrate your application with it.
 
-### 8.1. Testing instances
+### Testing instances
 
-There are a few testing instances already deployed for Aragon Protocol.
+There are a few testing instances already deployed for Aragon Court.
 All of these are mimicking the mainnet instance with some exceptions of term durations to provide a better testing experience.
 Additionally, all the instances are using their own deployed version of the following ERC20 tokens:
-- ANT, the native token of Aragon Protocol. You will need some fake ANT to stake as a guardian to be selected to resolve disputes.
-- DAI, used for the Aragon Protocol fees. You will need some fake DAI to pay the dispute fees.
+- ANT, the native token of Aragon Court. You will need some fake ANT to stake as a guardian to be selected to resolve disputes.
+- DAI, used for the Aragon Court fees. You will need some fake DAI to pay the dispute fees.
 
 Of course, there is an ERC20 faucet deployed for all these instances that you can use to claim some fake ANT or DAI to start testing. More information is outlined below on using these faucets.
 
-#### 8.1.1. Staging
+#### Staging
 
 This is probably the most useful testing instance you would like to try.
-Fees are low and protocol terms last a few minutes to make sure you can interact with it a bit faster.
+Fees are low and Court terms last a few minutes to make sure you can interact with it a bit faster.
 
 - Network: Rinkeby
-- Protocol term: 10 minutes
-- Payment period: 3 protocol terms (30 minutes)
-- Dashboard: https://protocol-staging.aragon.org/
+- Court term: 10 minutes
+- Payment period: 3 Court terms (30 minutes)
+- Dashboard: https://court-staging.aragon.org/
 - Address: [`0x52180af656a1923024d1accf1d827ab85ce48878`](http://rinkeby.etherscan.io/address/0x52180af656a1923024d1accf1d827ab85ce48878)
 - Fake ANT: [`0x5bc9be34f98eb072696d63b5be5d4d2f2c03d0ad`](http://rinkeby.etherscan.io/address/0x5bc9be34f98eb072696d63b5be5d4d2f2c03d0ad)
 - Fake DAI: [`0x3af6b2f907f0c55f279e0ed65751984e6cdc4a42`](http://rinkeby.etherscan.io/address/0x3af6b2f907f0c55f279e0ed65751984e6cdc4a42)
 - ERC20 faucet: [`0x5561f73c3BBe8202F4D7E51aD2A1F22f1E056eFE`](http://rinkeby.etherscan.io/address/0x5561f73c3BBe8202F4D7E51aD2A1F22f1E056eFE)
 
-#### 8.1.2. Rinkeby
+#### Rinkeby
 
 This testing instance mirrors the instance deployed to Mainnet, same terms duration and fee amounts
 
 - Network: Rinkeby
-- Protocol term: 8 hours
-- Payment period: 90 protocol terms (1 month)
-- Dashboard: https://protocol-rinkeby.aragon.org/
+- Court term: 8 hours
+- Payment period: 90 Court terms (1 month)
+- Dashboard: https://court-rinkeby.aragon.org/
 - Address: [`0xe9180dBE762Fe39520fC9883f7f7EFeBA6506534`](http://rinkeby.etherscan.io/address/0xe9180dBE762Fe39520fC9883f7f7EFeBA6506534)
 - Fake ANT: [`0x1FAB7d0D028ded72195322998003F6e82cF4cFdB`](http://rinkeby.etherscan.io/address/0x1FAB7d0D028ded72195322998003F6e82cF4cFdB)
 - Fake DAI: [`0xe9a083d88eed757b1d633321ce0519f432c6284d`](http://rinkeby.etherscan.io/address/0xe9a083d88eed757b1d633321ce0519f432c6284d)
 - ERC20 faucet: [`0x5561f73c3BBe8202F4D7E51aD2A1F22f1E056eFE`](http://rinkeby.etherscan.io/address/0x5561f73c3BBe8202F4D7E51aD2A1F22f1E056eFE)
 
-#### 8.1.3. Ropsten
+#### Ropsten
 
 This testing instance basically mimics the Mainnet instance
 
 - Network: Ropsten
-- Protocol term: 8 hours
-- Payment period: 90 protocol terms (1 month)
-- Dashboard: https://protocol-ropsten.aragon.org/
+- Court term: 8 hours
+- Payment period: 90 Court terms (1 month)
+- Dashboard: https://court-ropsten.aragon.org/
 - Address: [`0x3b26bc496aebaed5b3e0e81cde6b582cde71396e`](http://ropsten.etherscan.io/address/0x3b26bc496aebaed5b3e0e81cde6b582cde71396e)
 - Fake ANT: [`0xc863e1ccc047beff17022f4229dbe6321a6bce65`](http://ropsten.etherscan.io/address/0xc863e1ccc047beff17022f4229dbe6321a6bce65)
 - Fake DAI: [`0x4e1f48db14d7e1ada090c42ffe15ff3024eec8bf`](http://ropsten.etherscan.io/address/0x4e1f48db14d7e1ada090c42ffe15ff3024eec8bf)
 - ERC20 faucet: [`0x83c1ECDC6fAAb783d9e3ac2C714C0eEce3349638`](http://ropsten.etherscan.io/address/0x83c1ECDC6fAAb783d9e3ac2C714C0eEce3349638)
 
-#### 8.1.4. Local
+#### Local
 
 > Unless you are familiar with using a local Aragon development environment, we recommend skipping ahead to Section 8.2 and using one of the other available testing instances (Staging/ Rinkeby/ Ropsten).
 
-To deploy a local instance of Aragon Protocol you will need to clone the deployment scripts first:
+To deploy a local instance of Aragon Court you will need to clone the deployment scripts first:
 
 ```bash
 git clone https://github.com/aragon/aragon-network-deploy/
@@ -2757,30 +2756,31 @@ npx ganache-cli -i 15 --port 8545 --gasLimit 8000000 --deterministic
 Then, open a separate terminal in the same directory of the scripts repo and deploy a local instance by running the following command:
 
 ```bash
-npm run deploy:protocol --network ganache
+npm run deploy:court --network ganache
 ```
 
-This command will output the addresses of all the deployed modules of Aragon Protocol including the main entry point (the `AragonProtocol` contract).
+This command will output the addresses of all the deployed modules of Aragon Court including the main entry point (the `AragonCourt` contract).
 Additionally, it should deploy a fake version of the ANT and DAI tokens usable for testing purposes as explained above.
 
-### 8.2. Claiming fake tokens from the ERC20 faucets
+### Claiming fake tokens from the ERC20 faucets
 
 You can claim ANT or DAI fake tokens from the ERC20 faucets.
 You can do this directly through Etherscan, simply click in any of the faucet links shared above in section 8.1.
 Once there, you just need to enable your Web3 account and call the `withdraw()` function providing the desired token address and amount:
-![faucet](./faucet.png)
+![faucet](/faucet.png)
 
 When claiming tokens remember to add the 18 zeroes for the decimals, for example 10 DAI should be requested as `10000000000000000000`.
 Bear in mind there is a quota set for these faucets; they will only allow you to withdraw up to 10,000 fake-DAI or 10,000 fake-ANT every 7 days.
 
-### 8.3. Installing the Aragon Protocol dev CLI tool
+### Installing the Aragon Court dev CLI tool
 
-To interact with the deployed versions of Aragon Protocol, we built a node-based [CLI tool](https://github.com/aragon/protocol-backend/tree/development/packages/cli) that you can use.
+To interact with the deployed versions of Aragon Court, we built a node-based [CLI tool](https://github.com/aragon/court-backend/tree/development/packages/cli) that you can use.
 Currently, there is no published version of it. But you can clone the GitHub repo and run it locally.
 To continue with the testing guide you will need to use it. First, make sure you clone it and install its dependencies as follows:
+
 ```
-git clone https://github.com/aragon/protocol-backend/
-cd protocol-backend
+git clone https://github.com/aragon/court-backend/
+cd court-backend
 git checkout master
 yarn
 cd packages/cli
@@ -2789,14 +2789,14 @@ cd packages/cli
 This CLI tool is built on top of Truffle using a custom [config file](https://www.npmjs.com/package/@aragon/truffle-config-v5) provided by Aragon.
 Please review that package's documentation to understand how to set up your private keys for testing.
 
-Let's continue with the Aragon Protocol testing guide and see how we can use the CLI tool.
+Let's continue with the Aragon Court testing guide and see how we can use the CLI tool.
 
-### 8.4. Becoming a guardian
+### Becoming a guardian
 
-To become a guardian you simply need to activate some ANT tokens into Aragon Protocol.
-First make sure to have claimed some fake ANT tokens from the faucet corresponding to the Aragon Protocol instance you're willing to try.
+To become a guardian you simply need to activate some ANT tokens into Aragon Court.
+First make sure to have claimed some fake ANT tokens from the faucet corresponding to the Aragon Court instance you're willing to try.
 For now, the testing instances require a minimum of 10,000 ANT so make sure to have at least that amount.
-Then, you can activate tokens into Aragon Protocol using the `stake` and `activate` commands of the CLI tool as follows:
+Then, you can activate tokens into Aragon Court using the `stake` and `activate` commands of the CLI tool as follows:
 
 ```bash
 node ./bin/index.js stake --guardian [GUARDIAN] --amount [AMOUNT] --from [FROM] --network [NETWORK] --verbose
@@ -2807,15 +2807,15 @@ Where:
 - `[GUARDIAN]`: address of the guardian you will activate the tokens for
 - `[AMOUNT]`: amount of fake ANT tokens you will activate for the specified guardian (it doesn't require adding the decimals, so to activate 10,000 ANT simply enter `10000`)
 - `[FROM]`: address paying for the fake ANT tokens; this must be the address you used to claim the tokens from the faucet
-- `[NETWORK]`: name of the Aragon Protocol instance you are willing to use: `staging`, `rinkeby`, or `ropsten`
+- `[NETWORK]`: name of the Aragon Court instance you are willing to use: `staging`, `rinkeby`, or `ropsten`
 
 Note that you can also avoid the flag `--verbose` if you want to avoid having too much details about the transactions being sent to the network.
 
 You can check your current stake as a guardian in the dashboards linked above in section 8.1.
 
-### 8.5. Creating a dispute
+### Creating a dispute
 
-As you may know, disputes can only be submitted to Aragon Protocol through smart contracts that implement a specific interface to support being ruled by the protocol itself.
+As you may know, disputes can only be submitted to Aragon Court through smart contracts that implement a specific interface to support being ruled by the court itself.
 This is specified by the [`IArbitrable`](../../packages/ethereum/contracts/arbitration/IArbitrable.sol) interface.
 
 Thus, the first thing we should do is to deploy an Arbitrable contract. You can do this from the CLI running the following command:
@@ -2826,11 +2826,11 @@ node ./bin/index.js arbitrable -f [FROM] -n [NETWORK] --verbose
 
 Where:
 - `[FROM]`: address deploying the Arbitrable contract; this address will be the one available to create disputes with it
-- `[NETWORK]`: name of the Aragon Protocol instance you are using: `staging`, `rinkeby`, or `ropsten`
+- `[NETWORK]`: name of the Aragon Court instance you are using: `staging`, `rinkeby`, or `ropsten`
 
 This command will output the address of your new Arbitrable contract.
 
-Now, we are almost ready to create a dispute. The last step is to send some fake DAI to the Arbitrable instance so that it can pay for the protocol's dispute fees.
+Now, we are almost ready to create a dispute. The last step is to send some fake DAI to the Arbitrable instance so that it can pay for the court's dispute fees.
 The dispute fees are to pay the guardians for each dispute to be resolved.
 For the testing instances, each dispute costs 30.87 fake-DAI (`30870000000000000000` with 18 decimals).
 Thus, you will need to make a transfer from your account to your Arbitrable instance.
@@ -2857,12 +2857,12 @@ Where:
 - `[SUBMITTER_N]`: addresses submitting each piece of evidence; this list should match the evidence list length
 - `-c` flag: optional to declare that the evidence submission period should be immediately closed. Otherwise, you will need to manually close it afterwards.
 - `[FROM]`: address owning the Arbitrable instance being called; this address must be the one you used to deploy the Arbitrable instance before
-- `[NETWORK]`: name of the Aragon Protocol instance you are using: `staging`, `rinkeby`, or `ropsten`
+- `[NETWORK]`: name of the Aragon Court instance you are using: `staging`, `rinkeby`, or `ropsten`
 
 This command will output the ID of the dispute you've just created.
 
-A few things to bear in mind is that, even though the `[METADATA]` and `[EVIDENCE_N]` arguments could be any arbitrary information, in order to use the Protocol Dashboard to rule disputes, these should follow a specific structure.
-Currently, the Protocol Dashboard supports reading these pieces of information from files hosted in IPFS. Thus, it expects the following formats:
+A few things to bear in mind is that, even though the `[METADATA]` and `[EVIDENCE_N]` arguments could be any arbitrary information, in order to use the Court Dashboard to rule disputes, these should follow a specific structure.
+Currently, the Court Dashboard supports reading these pieces of information from files hosted in IPFS. Thus, it expects the following formats:
 - `[METADATA]`: `'{ "metadata": "[METADATA_CID]/metadata.json", "description": "Some dispute description" }'`
 - `[EVIDENCE_N]`: `ipfs:[EVIDENCE_N_CID]`
 
@@ -2881,7 +2881,7 @@ Additionally, the `metadata.json` file must have the following structure:
 
 Even though `agreementTitle`, `agreementText`, `plaintiff` and `defendant` are optional values, you will have a much better experience if you provide those.
 
-Additionally, it is recommended to upload all these pieces of information together to IPFS. For example, you can take a look at [these files](./sample-dispute) we used to create this [sample dispute](https://protocol-staging.aragon.org/disputes/15).
+Additionally, it is recommended to upload all these pieces of information together to IPFS. For example, you can take a look at [these files](./sample-dispute) we used to create this [sample dispute](https://court-staging.aragon.org/disputes/15).
 To upload those files we simply ran the following command while having the IPFS daemon running in background:
 
 ![ipfs](/ipfs-output.png)
@@ -2893,15 +2893,15 @@ Finally, following this example, this was the command we ran to create the dispu
 node ./bin/index.js dispute -a 0xe573D236d40F331d24420075Fb2EdE84B9968E3c -m '{ "metadata": "QmbN3uaqRMWypUGKUbjuhL8wCgFXGgfktQgoKhTp6zUm6o/metadata.json", "description": "Sample testing dispute" }' -e ipfs:QmQn1eK9jbKQtwHoUwgXw3QP7dZe6rSDmyPut9PLXeHjhR ipfs:QmWRBN26uoL7MdZJWhSuBaKgCVvStBQMvFwSxtseTDY32S -s 0x59d0b5475AcF30F24EcA10cb66BB5Ed75d3d9016 0x61F73dFc8561C322171c774E5BE0D9Ae21b2da42 -c -n staging --verbose
 ```
 
-### 8.6. Ruling a dispute
+### Ruling a dispute
 
-You can use any of the Protocol Dashboard instances linked in section 8.1 to interact with your created disputes (note that in some environments, it may be difficult to ensure that your account is drafted due to the randomness nature of the protocol—and therefore can be difficult to come to a ruling you want).
+You can use any of the Court Dashboard instances linked in section 8.1 to interact with your created disputes (note that in some environments, it may be difficult to ensure that your account is drafted due to the randomness nature of the Court and therefore can be difficult to come to a ruling you want).
 If your dispute's metadata was not correctly formatted or made available as explained in sections 8.5.1 and 8.5.2, the dispute will most likely not display the intended information to guardians.
 
-Alternatively, you can use the rest of the CLI tool [commands](https://github.com/aragon/protocol-backend/tree/master/packages/cli/#commands) to begin ruling your dispute:
-- [`draft`](https://github.com/aragon/protocol-backend/blob/master/packages/cli/src/commands/draft.js): Draft dispute and close evidence submission period if necessary
-- [`commit`](https://github.com/aragon/protocol-backend/blob/master/packages/cli/src/commands/commit.js): Commit vote for a dispute round
-- [`reveal`](https://github.com/aragon/protocol-backend/blob/master/packages/cli/src/commands/reveal.js): Reveal committed vote
-- [`appeal`](https://github.com/aragon/protocol-backend/blob/master/packages/cli/src/commands/appeal.js): Appeal dispute in favour of a certain outcome
-- [`confirm-appeal`](https://github.com/aragon/protocol-backend/blob/master/packages/cli/src/commands/confirm-appeal.js): Confirm an existing appeal for a dispute
-- [`execute`](https://github.com/aragon/protocol-backend/blob/master/packages/cli/src/commands/execute.js): Execute ruling for a dispute
+Alternatively, you can use the rest of the CLI tool [commands](https://github.com/aragon/court-backend/tree/master/packages/cli/#commands) to begin ruling your dispute:
+- [draft](https://github.com/aragon/court-backend/blob/master/packages/cli/src/commands/draft.js): Draft dispute and close evidence submission period if necessary
+- [commit](https://github.com/aragon/court-backend/blob/master/packages/cli/src/commands/commit.js): Commit vote for a dispute round
+- [reveal](https://github.com/aragon/court-backend/blob/master/packages/cli/src/commands/reveal.js): Reveal committed vote
+- [appeal](https://github.com/aragon/court-backend/blob/master/packages/cli/src/commands/appeal.js): Appeal dispute in favour of a certain outcome
+- [confirm-appeal](https://github.com/aragon/court-backend/blob/master/packages/cli/src/commands/confirm-appeal.js): Confirm an existing appeal for a dispute
+- [execute](https://github.com/aragon/court-backend/blob/master/packages/cli/src/commands/execute.js): Execute ruling for a dispute
