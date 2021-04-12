@@ -8,14 +8,11 @@ Welcome to Govern's documentation.
 
 Govern is software for creating and governing organizations such as DeFi projects, open source projects, gaming guilds, cooperatives, nonprofits, clubs, companies, and any other type of organization you can imagine. It's Aragon's implementation of ERC-3000, the standard for binding off-chain voting.
 
-Along with off-chain voting solutions like [Vocdoni](https://docs.vocdoni.io/) it allows you to _govern_ all parts of your project, even if not completely decentralized, in an easy manner. also allowing for flexibility and extensions when needed.
-
-* The [**Quick Start**](govern/quick-start.md) section gives an overview of all the individual pieces of Govern.
-* The [**Concepts**](govern/concepts.md) section provides more insight over Govern and all of its tooling.
+Along with off-chain voting solutions like [Vocdoni](https://docs.vocdoni.io/) it allows you to _govern_ all parts of your project, even if not completely decentralized, in an easy manner. Also allowing for flexibility and extensions when needed.
 
 If you have any questions or you'd like to say hi, come join the community at [Discord](https://discord.com/invite/aragon)!
 
-## Getting started
+## Introduction
 
 The Govern project consists of several sub projects interacting with each other.
 
@@ -61,17 +58,17 @@ The Aragon Govern Console is a no-frills, forkable, extensible power user / deve
 
 ![The Aragon Govern Console](https://user-images.githubusercontent.com/36158/97722356-77c04900-1ac2-11eb-8a5c-5034a54cdbb4.png)
 
-Relevant packages:
+Relevant package:
 
-- [`Govern Console`](https://github.com/aragon/govern/blob/master/packages/govern-console).
+- [`Govern Console`](https://github.com/aragon/govern/blob/master/packages/govern-console)
 
 ## Govern.js
 
-> [`Govern.js`](https://github.com/aragon/govern/blob/master/packages/govern).
+> [`Govern.js`](https://github.com/aragon/govern/blob/master/packages/govern)
 
 **Usage with default config**
 
-> The default config uses the Govern servers deployed by Aragon
+> The default config uses TheGraph nodes hosted by TheGraph Foundation
 
 ``` javascript
 import { dao } from '@aragon/govern'
@@ -85,7 +82,7 @@ console.log(response)
 ``` javascript
 import { dao, configure } from '@aragon/govern'
 
-configure({governURL: 'https://myOwnGovernServer.io'});
+configure({subgraphURL: 'https://myOwnTheGraphNode.io/aragon-govern'});
 
 const response = await dao('AN-DAO');
 
@@ -96,7 +93,7 @@ console.log(response)
 
 #### dao(name) ⇒ ``Promise<Dao>``
 
-Returns details about a DAO by his address.
+Returns details about a DAO by his name.
 
 | Param  | Type                  | Description                               |
 | ------ | --------------------- | ----------------------------------------- |
@@ -164,9 +161,212 @@ configure({subgraphUrl: 'https://myOwnTheGraphNode.io/aragon/govern'});
 
 ## Subgraph
 
-> [`Govern Subgraph`](https://github.com/aragon/govern/blob/master/packages/govern-subgraph).
+> [`Govern Subgraph`](https://github.com/aragon/govern/blob/master/packages/govern-subgraph)
 
-TBD
+### GovernRegistry
+``` graphql
+type GovernRegistry @entity {
+  id: ID!
+  address: Bytes!
+  count: Int!
+  daos: [Dao!]!
+}
+```
+
+The ``GovernRegistry`` as the name is saying is here to register your DAO within the Govern system.
+
+### DAO
+``` graphql
+type Dao @entity {
+  id: ID!
+  name: String!
+  queue: GovernQueue!
+  executor: Govern!
+  token: String!
+  registrant: String!
+}
+```
+
+This GraphQL entitiy holds anything you need to know about your DAO.
+
+### Govern
+``` graphql
+type Govern @entity {
+  id: ID!
+  address: Bytes!
+  metadata: Bytes
+  balance: BigInt!
+  roles: [Role!]!
+}
+```
+
+The ``Govern`` entitiy is the ``Executor`` of ERC3k and can get compared with the Agent from V1 of Aragon.
+
+### GovernQueue
+``` graphql
+type GovernQueue @entity {
+  id: ID!
+  address: Bytes!
+  nonce: BigInt!
+  config: Config!
+  containers: [Container!]! @derivedFrom(field: "queue")
+  roles: [Role!]!
+}
+```
+
+The ``GovernQueue`` entitiy is the actual execution delay of the Govern optimistic governance system and contains all scheduled, challenged, and executed containers.
+By side of the containers of the queue can you also find the configuration of it with the rules (DAO Agreement) and the collaterals required to interact with.
+
+### Container
+``` graphql
+type Container @entity {
+  id: ID!
+  state: ContainerState!
+  queue: GovernQueue!
+  config: Config!
+  payload: Payload!
+  history: [ContainerEvent!]! @derivedFrom(field: "container")
+}
+```
+
+The ``Container`` entity of Govern is the actual execution payload for the queue. It contains the on-chain actions it should execute, the current state of the scheduled execution, and as many additional details you need to inform your user about the exact details of a execution.
+
+### Config
+``` graphql
+type Config @entity {
+  id: ID!
+  executionDelay: BigInt!
+  scheduleDeposit: Collateral!
+  challengeDeposit: Collateral!
+  resolver: Bytes!
+  rules: Bytes!
+}
+```
+
+The ``Config`` entity is stored within the ``GovernQueue`` and contains all the important configurations for your Govern based DAO.
+
+### Payload
+``` graphql
+type Payload @entity {
+  id: ID!
+  nonce: BigInt!
+  executionTime: BigInt!
+  submitter: Bytes!
+  executor: Govern!
+  actions: [Action!]! @derivedFrom(field: "payload")
+  allowFailuresMap: Bytes!
+  proof: Bytes!
+}
+```
+
+The ``Payload`` entity contains anything needed for the on-chain execution.
+
+### Collateral
+``` graphql
+type Collateral @entity {
+  id: ID!
+  token: Bytes!
+  amount: BigInt!
+}
+```
+
+The ``Collateral`` entity is used within the ``Config`` entitiy to define the token and amount needed to schedule or challenge a container.
+
+### Action
+``` graphql
+type Action @entity {
+  id: ID!
+  to: Bytes!
+  value: BigInt!
+  data: Bytes!
+  payload: Payload!
+}
+```
+
+The ``Action`` entity is used within the ``Payload`` actions array and defines one on-chain call of the container.
+
+### Role
+``` graphql
+type Role @entity {
+  id: ID!
+  entity: Bytes!
+  selector: Bytes!
+  who: Bytes!
+  granted: Boolean!
+  frozen: Boolean!
+}
+```
+
+The ``Role`` entitiy is used for the ``ACL`` of Govern.
+
+### ContainerState
+``` graphql
+enum ContainerState {
+  None
+  Scheduled
+  Approved
+  Challenged
+  Rejected
+  Cancelled
+  Executed
+}
+```
+This enumaration is used to define the current state of the ``Container``entity.
+
+### ContainerEvent
+``` graphql
+interface ContainerEvent {
+  id: ID!
+  container: Container!
+  createdAt: BigInt!
+}
+
+type ContainerEventChallenge implements ContainerEvent @entity {
+  id: ID!
+  container: Container!
+  createdAt: BigInt!
+  challenger: Bytes!
+  collateral: Collateral!
+  disputeId: BigInt!
+  reason: Bytes!
+  resolver: Bytes!
+}
+
+type ContainerEventExecute implements ContainerEvent @entity {
+  id: ID!
+  container: Container!
+  createdAt: BigInt!
+  execResults: [Bytes!]!
+}
+
+type ContainerEventResolve implements ContainerEvent @entity {
+  id: ID!
+  container: Container!
+  createdAt: BigInt!
+  approved: Boolean!
+}
+
+type ContainerEventRule implements ContainerEvent @entity {
+  id: ID!
+  container: Container!
+  createdAt: BigInt!
+  ruling: BigInt!
+}
+
+type ContainerEventSchedule implements ContainerEvent @entity {
+  id: ID!
+  container: Container!
+  createdAt: BigInt!
+  collateral: Collateral!
+}
+
+type ContainerEventVeto implements ContainerEvent @entity {
+  id: ID!
+  container: Container!
+  createdAt: BigInt!
+  reason: Bytes!
+}
+```
 
 
 ### Deployments
