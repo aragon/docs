@@ -6,7 +6,7 @@ sidebar: auto
 
 ![Aragon Govern header](/govern.png)
 
-Welcome to Govern's documentation.
+<p style="text-align: center; font-size: 24px;">Welcome to Govern's documentation.</p>
 
 Govern is software for creating and governing organizations such as DeFi projects, open source projects, gaming guilds, cooperatives, nonprofits, clubs, companies, and any other type of organization you can imagine. It's Aragon's implementation of ERC-3000, the standard for binding off-chain voting.
 
