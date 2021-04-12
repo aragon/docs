@@ -1,6 +1,6 @@
 ---
 home: true
-heroImage: /aragon_logo.svg
+heroImage: /aragon_logo_big.svg
 tagline: Aragon V2
 actionText: Getting Started →
 actionLink: /guide/

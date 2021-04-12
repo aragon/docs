@@ -9,6 +9,7 @@ module.exports = {
     ['meta', { name: 'apple-mobile-web-app-status-bar-style', content: 'black' }]
   ],
   themeConfig: {
+    logo: '/aragon_logo_small.svg',
     repo: '',
     editLinks: false,
     docsDir: '',
@@ -31,19 +32,7 @@ module.exports = {
         text: 'Voting',
         link: '/voting/'
       }
-    ],
-    sidebar: {
-      '/getting-started/': [
-        {
-          title: 'Getting Started',
-          collapsable: false,
-          children: [
-            '',
-            'using-vue',
-          ]
-        }
-      ],
-    }
+    ]
   },
   plugins: [
     '@vuepress/plugin-back-to-top',
