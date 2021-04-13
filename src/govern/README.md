@@ -29,6 +29,9 @@ Through the Executor, Govern DAOs can also hold funds and interact with any arbi
 
 Learn more about the [smart contract system here](#smart-contracts).
 
+Flow-Chart of Govern:
+![Aragon Govern Flow-Chart](/govern_flow_chart.png)
+
 Govern will also have first class support with Vocdoni and Snapshot, in which a space or token will be able to be configured so that every proposal can attach an on-chain action to the corresponding options to vote for. With these tools, we have everything we need to allow a project, to fully and progressively decentralize and take decisions over its future in a community-oriented manner.
 
 ### Optimistic by design
