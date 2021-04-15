@@ -119,7 +119,7 @@ console.log(response)
 
 #### dao(name) ⇒ ``Promise<Dao>``
 
-Returns details about a DAO by his name.
+Returns details about a DAO by its name.
 
 | Param  | Type                  | Description                               |
 | ------ | --------------------- | ----------------------------------------- |
@@ -226,7 +226,7 @@ type Govern @entity {
 }
 ```
 
-The ``Govern`` entitiy is the ``Executor`` of ERC3k and can get compared with the Agent from V1 of Aragon.
+The ``Govern`` entity is the ``Executor`` of ERC3k and is comparable to the Agent from V1 of Aragon.
 
 ### GovernQueue
 ``` graphql
@@ -240,8 +240,8 @@ type GovernQueue @entity {
 }
 ```
 
-The ``GovernQueue`` entitiy is the actual execution delay of the Govern optimistic governance system and contains all scheduled, challenged, and executed containers.
-By side of the containers of the queue can you also find the configuration of it with the rules (DAO Agreement) and the collaterals required to interact with.
+The ``GovernQueue`` entity performs the execution delay for the Govern optimistic governance system and contains all scheduled, challenged, and executed containers.
+Along with the containers in the queue you can also find their configuration with the rules (DAO Agreement) and the collaterals required to interact with.
 
 ### Container
 ``` graphql
@@ -255,7 +255,7 @@ type Container @entity {
 }
 ```
 
-The ``Container`` entity of Govern is the actual execution payload for the queue. It contains the on-chain actions it should execute, the current state of the scheduled execution, and as many additional details you need to inform your user about the exact details of a execution.
+The ``Container`` entity of Govern is the execution payload for the queue. It contains the on-chain actions it should execute, the current state of the scheduled execution, and as many additional details as you need to inform your user about the exact details of an execution.
 
 ### Config
 ``` graphql
@@ -337,7 +337,7 @@ enum ContainerState {
   Executed
 }
 ```
-This enumaration is used to define the current state of the ``Container``entity.
+This enumaration is used to define the current state of the ``Container`` entity.
 
 ### ContainerEvent
 ``` graphql
@@ -418,7 +418,7 @@ Aragon Govern's contracts hold very little state; this is to keep gas costs as l
 
 The `ERC3000Registry` contract serves as the **central registry for all Govern DAOs**. Every DAO spawned through a properly-implemented `GovernFactory` will register the new DAO in the "official" registry. The registry takes care of doing these things:
 
-* Keep track\* of every `Govern` ⟷ `GovernQueue` pair assigning it a name on the blockchain. This means that instead of assigning an ENS name, this is left to the user, as the name itself will be saved in the contract's storage.
+* Keep track\* of every `Govern` ⟷ `GovernQueue` pair, assigning it a name on the blockchain. This means that instead of assigning an ENS name, this is left to the user, as the name itself will be saved in the contract's storage.
 * Setting metadata, which means you can include an IPFS CID to talk about your DAO, and include relevant links.
 
 **Think of it as...**
@@ -449,7 +449,7 @@ A book which keeps track of every DAO and its core relevant info, which will be 
 
 [✨ Implementation](https://github.com/aragon/govern/blob/master/packages/govern-core/contracts/pipelines/GovernQueue.sol)
 
-`GovernQueue` is by far the most critical contract to understand, as it's the main point of interaction with the DAO and the Aragon Protocol. This is what most users will interact with directly—it holds the DAOs configuration parameters, and its where actors can schedule, execute, veto and challenge actions.
+`GovernQueue` is by far the most critical contract to understand, as it's the main point of interaction with the DAO and the Aragon Protocol. This is what most users will interact with directly—it holds the DAO's configuration parameters, and its where actors can schedule, execute, veto and challenge actions.
 
 `GovernQueue` **can be configured**, meaning you can change these parameters:
 
@@ -485,14 +485,14 @@ Actions can be **vetoed**, which might be useful for projects which are venturin
 
 The ACL from govern is a much leaner implementation of the original ACL from aragonOS, but still very powerful, having the ability to grant, revoke, and freeze roles. There are a couple of differences:
 
-* Is devised to be as an **inheritable** contract. Instead of being a single contract that binds the whole organization together, **both `GovernQueue` and `Govern` have their own ACLs**.
+* Is devised to be an **inheritable** contract. Instead of being a single contract that binds the whole organization together, **both `GovernQueue` and `Govern` have their own ACLs**.
 * It has a handy **bulk** function to set multiple permissions at once.
 * The address for freezing a role is `0x0000000000000000000000000000000000000001`.
 * The address for giving the permission to everyone is`0xffffffffffffffffffffffffffffffffffffffff`
 
 ### Deployments
 
-Log of deployed govern relevant instances and related infrastructure.
+Log of relevant deployed govern instances and related infrastructure.
 
 **See [aragon/govern deployments](https://github.com/aragon/govern/tree/master/deployments)**
 
@@ -525,4 +525,3 @@ ERC-3000 presents a basic on-chain spec for contracts to optimistically enact go
 The standard is opinionated in defining the 6 entrypoint functions to contracts supporting the standard. But it allows for any sort of resolver mechanism for the challenge/response games characteristic of optimistic contracts. 
 
 While the authors \(Jorge Izquierdo from Aragon and Fabien Marino from Balancer\) currently believe resolving challenges [using a subjective oracle](https://aragon.org/blog/snapshot) is the right tradeoff, the standard has been designed such that changing to another mechanism is possible \(a deterministic resolver like [Optimism’s OVM](https://optimism.io) uses\), even allowing to hot-swap it in the same live instance.
-
